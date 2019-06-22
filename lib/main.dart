@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -68,14 +67,15 @@ class TempAar extends StatelessWidget {
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Text(reading.data.celsius1.toStringAsFixed(1),
+                    Text(reading.data.celsius1.toStringAsFixed(2)+'C',
                       style: TextStyle(fontSize: 32, color: Colors.black87)),
-                    Text(reading.data.celsius2.toStringAsFixed(1),
+                    Text(reading.data.celsius2.toStringAsFixed(2)+'C',
                       style: TextStyle(fontSize: 32, color: Colors.black87)),
-                    Text(reading.data.volt.toStringAsFixed(1),
+                    Text(reading.data.volt.toStringAsFixed(2) +
+                    'V',
                       style: TextStyle(fontSize: 32, color: Colors.black87)),
                     Text(reading.data.time.toLocal().toString(),
-                      style: TextStyle(fontSize: 32, color: Colors.black87)),
+                      style: TextStyle(fontSize: 20, color: Colors.black87)),
                   ]
                 );
               } else if (reading.hasError) {
