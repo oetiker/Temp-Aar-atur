@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -41,23 +42,36 @@ class TempReading {
   }
 }
 
-void main() => runApp(TempAar(tempi: fetchTemperature()));
+void main() {
 
-class TempAar extends StatelessWidget {
-  final Future<TempReading> tempi;
+  runApp(new MaterialApp(
+    home: new TempAar(),
+    title: 'Aare Temperature',
+    theme: ThemeData(
+        primarySwatch: Colors.blue,
+    ),
+  ));
+}
 
-  TempAar({Key key, this.tempi}) : super(key: key);
+class TempAar extends StatefulWidget {
+  @override
+  TempAarState createState() => new TempAarState();
+}
 
+class TempAarState extends State<TempAar> {
+  Future<TempReading> tempi = fetchTemperature();
+  // var _count = 0;
+  final tenMinutes = const Duration(seconds:600);
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Aare Temperature',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: Scaffold(
+    Timer(tenMinutes,   () {
+      // setState will call the build method again and thus trigger a data
+      // refresh
+      setState(() {});
+    });
+    return Scaffold(
         appBar: AppBar(
-          title: Text('Aare Temperature'),
+          title: Text('Aare Temperatur'),
         ),
         body: Center(
           child: FutureBuilder<TempReading>(
@@ -76,6 +90,7 @@ class TempAar extends StatelessWidget {
                       style: TextStyle(fontSize: 32, color: Colors.black87)),
                     Text(reading.data.time.toLocal().toString(),
                       style: TextStyle(fontSize: 20, color: Colors.black87)),
+                    // Text((_count++).toString()),
                   ]
                 );
               } else if (reading.hasError) {
@@ -85,7 +100,6 @@ class TempAar extends StatelessWidget {
             },
           ),
         ),
-      ),
-    );
+      );
   }
 }
