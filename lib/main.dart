@@ -67,6 +67,7 @@ class TempAarState extends State<TempAar> {
 
   // var _count = 0;
   final tenMinutes = const Duration(seconds:800);
+  bool showVoltage = false;
   @override
   Widget build(BuildContext context) {
     Future<TempReading> tempi = fetchTemperature();
@@ -78,12 +79,14 @@ class TempAarState extends State<TempAar> {
     const double iconSize = 30;
     const double titleScale = 0.8;
     const double subtitleScale = 1.8;
+
     return Scaffold(
         appBar: AppBar(
           title: Text('River Aare in Olten'),
         ),
 
         body: Center(
+
           child: FutureBuilder<TempReading>(
             future: tempi,
             builder: (context, reading) {
@@ -104,7 +107,7 @@ class TempAarState extends State<TempAar> {
                         subtitle: Text(reading.data.celsius2.toStringAsFixed(1)+' °C',textScaleFactor: subtitleScale),
                       )
                     ),
-                    Card(
+                    if (showVoltage) Card(
                       child: ListTile(
                         leading: const Icon(Icons.battery_std,size:iconSize),
                         title: Text('Battery Voltage',textScaleFactor: titleScale,),
@@ -116,6 +119,10 @@ class TempAarState extends State<TempAar> {
                         leading: const Icon(Icons.watch_later,size:iconSize),
                         title: Text('Last Measurement',textScaleFactor: titleScale,),
                         subtitle: Text(DateFormat("H:mm:ss d.M.yyyy").format(reading.data.time.toLocal()),textScaleFactor: 1.2),
+                        onLongPress: () {
+                          showVoltage = ! showVoltage;
+                          setState(() {});
+                        },
                     )
                   ]
                 );
