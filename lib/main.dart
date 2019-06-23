@@ -94,21 +94,21 @@ class TempAarState extends State<TempAar> {
                       child: ListTile(
                         leading: const Icon(Icons.opacity,size: iconSize),
                         title: Text('Water Temperature',textScaleFactor: titleScale,),
-                        subtitle: Text(reading.data.celsius1.toStringAsFixed(1)+' C',textScaleFactor: subtitleScale),
+                        subtitle: Text(reading.data.celsius1.toStringAsFixed(1)+' °C',textScaleFactor: subtitleScale),
                       )
                     ),
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.wb_cloudy,size:iconSize),
                         title: Text('Air Temperature',textScaleFactor: titleScale,),
-                        subtitle: Text(reading.data.celsius2.toStringAsFixed(1)+' C',textScaleFactor: subtitleScale),
+                        subtitle: Text(reading.data.celsius2.toStringAsFixed(1)+' °C',textScaleFactor: subtitleScale),
                       )
                     ),
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.battery_std,size:iconSize),
                         title: Text('Battery Voltage',textScaleFactor: titleScale,),
-                        subtitle: Text(reading.data.volt.toStringAsFixed(2) + 'V',textScaleFactor: subtitleScale,),
+                        subtitle: Text(reading.data.volt.toStringAsFixed(2) + ' V',textScaleFactor: subtitleScale,),
                       )
                     ),
                     Spacer(flex:1),
