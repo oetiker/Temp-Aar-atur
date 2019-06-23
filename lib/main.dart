@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 Future<TempReading> fetchTemperature() async {
   final response = await http.get(
@@ -63,38 +64,59 @@ class TempAar extends StatefulWidget {
 }
 
 class TempAarState extends State<TempAar> {
-  Future<TempReading> tempi = fetchTemperature();
+
   // var _count = 0;
-  final tenMinutes = const Duration(seconds:600);
+  final tenMinutes = const Duration(seconds:800);
   @override
   Widget build(BuildContext context) {
+    Future<TempReading> tempi = fetchTemperature();
     Timer(tenMinutes,   () {
       // setState will call the build method again and thus trigger a data
       // refresh
       setState(() {});
     });
+    const double iconSize = 40;
+    const double titleScale = 0.8;
+    const double subtitleScale = 1.8;
     return Scaffold(
         appBar: AppBar(
-          title: Text('Aare Temperatur'),
+          title: Text('River Aare in Olten'),
         ),
         body: Center(
           child: FutureBuilder<TempReading>(
             future: tempi,
             builder: (context, reading) {
               if (reading.hasData) {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                return ListView(
                   children: [
-                    Text(reading.data.celsius1.toStringAsFixed(2)+'C',
-                      style: TextStyle(fontSize: 32, color: Colors.black87)),
-                    Text(reading.data.celsius2.toStringAsFixed(2)+'C',
-                      style: TextStyle(fontSize: 32, color: Colors.black87)),
-                    Text(reading.data.volt.toStringAsFixed(2) +
-                    'V',
-                      style: TextStyle(fontSize: 32, color: Colors.black87)),
-                    Text(reading.data.time.toLocal().toString(),
-                      style: TextStyle(fontSize: 20, color: Colors.black87)),
-                    // Text((_count++).toString()),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.opacity,size: iconSize),
+                        title: Text('Water Temperature',textScaleFactor: titleScale,),
+                        subtitle: Text(reading.data.celsius1.toStringAsFixed(1)+' C',textScaleFactor: subtitleScale),
+                      )
+                    ),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.wb_cloudy,size:iconSize),
+                        title: Text('Air Temperature',textScaleFactor: titleScale,),
+                        subtitle: Text(reading.data.celsius2.toStringAsFixed(1)+' C',textScaleFactor: subtitleScale),
+                      )
+                    ),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.battery_std,size:iconSize),
+                        title: Text('Battery Voltage',textScaleFactor: titleScale,),
+                        subtitle: Text(reading.data.volt.toStringAsFixed(2) + 'V',textScaleFactor: subtitleScale,),
+                      )
+                    ),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.watch_later,size:iconSize),
+                        title: Text('Last Measurement',textScaleFactor: titleScale,),
+                        subtitle: Text(DateFormat("H:mm:ss d.M.yyyy").format(reading.data.time.toLocal()),textScaleFactor: subtitleScale,),
+                      )
+                    )
                   ]
                 );
               } else if (reading.hasError) {
