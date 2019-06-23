@@ -31,6 +31,9 @@ class TempReading {
   TempReading({this.celsius1, this.celsius2, this.volt, this.time});
 
   factory TempReading.fromJson(List<dynamic> json) {
+    // the timestamp returned from the website has more
+    // than 6 digits precision ... dart can not deal with this
+    // so we have to make sure there are only 6 digits.
     RegExp exp = new RegExp(r"(.+\.\d{1,6})\d*.*Z");
     var match = exp.firstMatch(json[0]['time']);
     return TempReading(
