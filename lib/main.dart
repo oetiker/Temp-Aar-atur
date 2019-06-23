@@ -75,19 +75,20 @@ class TempAarState extends State<TempAar> {
       // refresh
       setState(() {});
     });
-    const double iconSize = 40;
+    const double iconSize = 30;
     const double titleScale = 0.8;
     const double subtitleScale = 1.8;
     return Scaffold(
         appBar: AppBar(
           title: Text('River Aare in Olten'),
         ),
+
         body: Center(
           child: FutureBuilder<TempReading>(
             future: tempi,
             builder: (context, reading) {
               if (reading.hasData) {
-                return ListView(
+                return Column(
                   children: [
                     Card(
                       child: ListTile(
@@ -110,12 +111,11 @@ class TempAarState extends State<TempAar> {
                         subtitle: Text(reading.data.volt.toStringAsFixed(2) + 'V',textScaleFactor: subtitleScale,),
                       )
                     ),
-                    Card(
-                      child: ListTile(
+                    Spacer(flex:1),
+                    ListTile(
                         leading: const Icon(Icons.watch_later,size:iconSize),
                         title: Text('Last Measurement',textScaleFactor: titleScale,),
-                        subtitle: Text(DateFormat("H:mm:ss d.M.yyyy").format(reading.data.time.toLocal()),textScaleFactor: subtitleScale,),
-                      )
+                        subtitle: Text(DateFormat("H:mm:ss d.M.yyyy").format(reading.data.time.toLocal()),textScaleFactor: 1.2),
                     )
                   ]
                 );
