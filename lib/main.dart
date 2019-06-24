@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 
 Future<TempReading> fetchTemperature() async {
   final response = await http.get(
-      'https://aare-tempi.data.thethingsnetwork.org/api/v2/query/tempi-sensor-aarweg?last=2h',
+      'https://aare-tempi.data.thethingsnetwork.org/api/v2/query/tempi-sensor-aarweg?last=12h',
       headers: {
         HttpHeaders.acceptHeader: 'application/json',
         HttpHeaders.authorizationHeader:
