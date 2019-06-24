@@ -120,7 +120,7 @@ class TempAarState extends State<TempAar> {
                     ListTile(
                         leading: const Icon(Icons.watch_later,size:iconSize, color: iconColor),
                         title: Text('Last Measurement',textScaleFactor: titleScale,),
-                        subtitle: Text(DateFormat("H:mm:ss d.M.yyyy").format(reading.data.time.toLocal()),textScaleFactor: 1.2),
+                        subtitle: Text(DateFormat("d.M.yyyy H:mm").format(reading.data.time.toLocal()),textScaleFactor: 1.2),
                         onLongPress: () {
                           showVoltage = ! showVoltage;
                           setState(() {});
