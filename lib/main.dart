@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' as intl;
 
 Future<TempReading> fetchTemperature() async {
   final response = await http.get(
@@ -48,12 +48,12 @@ class TempReading {
 }
 
 void main() {
-
   runApp(new MaterialApp(
     home: new TempAar(),
-    title: 'River Aare in Olten',
+    title: 'TemperAare - Olten',
+    debugShowCheckedModeBanner: false,
     theme: ThemeData(
-        primarySwatch: Colors.blue,
+      primarySwatch: Colors.blue,
     ),
   ));
 }
@@ -64,70 +64,108 @@ class TempAar extends StatefulWidget {
 }
 
 class TempAarState extends State<TempAar> {
-
   // var _count = 0;
-  final tenMinutes = const Duration(seconds:800);
+  final tenMinutes = const Duration(seconds: 800);
   bool showVoltage = false;
   @override
   Widget build(BuildContext context) {
     Future<TempReading> tempi = fetchTemperature();
-    Timer(tenMinutes,   () {
+    Timer(tenMinutes, () {
       // setState will call the build method again and thus trigger a data
       // refresh
       setState(() {});
     });
     const double iconSize = 54;
     const double titleScale = 0.8;
-    const double subtitleScale = 2;
-    const Color iconColor = Colors.black12;
+    const double subtitleScale = 3;
+    const Color iconColor = Colors.black26;
 
     return Scaffold(
-        appBar: AppBar(
-          title: Text('River Aare in Olten'),
-          backgroundColor: Colors.blue.shade900,
-        ),
-
-        body: Center(
-
+      appBar: AppBar(
+        title: Text('Aare Temperature in Olten'),
+        backgroundColor: Color.fromRGBO(0,0,0,0.6),
+      ),
+      body: Center(
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/background.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
           child: FutureBuilder<TempReading>(
             future: tempi,
             builder: (context, reading) {
               if (reading.hasData) {
-                return Column(
-                  children: [
+                return Column(children: [
+                  Card(
+                    color: Color.fromRGBO(255, 255, 255, 0.8),
+                      child: ListTile(
+                    leading: const Icon(Icons.opacity,
+                        size: iconSize, color: iconColor),
+                    title: Text(
+                      'Water temperature at -40cm',
+                      textScaleFactor: titleScale,
+                    ),
+                    subtitle: Text(
+                        reading.data.celsius1.toStringAsFixed(1) + ' °C',
+                        textScaleFactor: subtitleScale),
+                  )),
+                  Card(
+                    color: Color.fromRGBO(255, 255, 255, 0.7),
+                      child: ListTile(
+                    leading: const Icon(Icons.wb_sunny,
+                        size: iconSize, color: iconColor),
+                    title: Text(
+                      'Air temperature next to the river',
+                      textScaleFactor: titleScale,
+                    ),
+                    subtitle: Text(
+                        reading.data.celsius2.toStringAsFixed(1) + ' °C',
+                        textScaleFactor: subtitleScale),
+                  )),
+                  if (showVoltage && MediaQuery.of(context).orientation == Orientation.portrait)
                     Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.opacity,size: iconSize, color: iconColor),
-                        title: Text('Water Temperature',textScaleFactor: titleScale,),
-                        subtitle: Text(reading.data.celsius1.toStringAsFixed(1)+' °C',textScaleFactor: subtitleScale),
-                      )
+                      color: Color.fromRGBO(255, 255, 255, 0.7),
+                        child: ListTile(
+                      leading: const Icon(Icons.battery_std,
+                          size: iconSize, color: iconColor),
+                      title: Text(
+                        'Battery Voltage',
+                        textScaleFactor: titleScale,
+                      ),
+                      subtitle: Text(
+                        reading.data.volt.toStringAsFixed(2) + ' V',
+                        textScaleFactor: subtitleScale,
+                      ),
+                    )),
+                  // Expanded(
+                  //   child: FittedBox(
+                  //     fit: BoxFit.contain, // otherwise the logo will be tiny
+                  //     child: timeChart(context),
+                  //   ),
+                  // ),
+                  Spacer(flex: 1),
+                  Card(
+                    color: Color.fromRGBO(255, 255, 255, 0.7),
+                    child: ListTile(
+                    leading: const Icon(Icons.watch_later,
+                        size: iconSize, color: iconColor),
+                    title: Text(
+                      'Last Measurement',
+                      textScaleFactor: titleScale,
                     ),
-                    Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.wb_cloudy,size:iconSize, color: iconColor),
-                        title: Text('Air Temperature',textScaleFactor: titleScale,),
-                        subtitle: Text(reading.data.celsius2.toStringAsFixed(1)+' °C',textScaleFactor: subtitleScale),
-                      )
-                    ),
-                    if (showVoltage) Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.battery_std,size:iconSize, color: iconColor),
-                        title: Text('Battery Voltage',textScaleFactor: titleScale,),
-                        subtitle: Text(reading.data.volt.toStringAsFixed(2) + ' V',textScaleFactor: subtitleScale,),
-                      )
-                    ),
-                    Spacer(flex:1),
-                    ListTile(
-                        leading: const Icon(Icons.watch_later,size:iconSize, color: iconColor),
-                        title: Text('Last Measurement',textScaleFactor: titleScale,),
-                        subtitle: Text(DateFormat("d.M.yyyy H:mm").format(reading.data.time.toLocal()),textScaleFactor: 1.2),
-                        onLongPress: () {
-                          showVoltage = ! showVoltage;
-                          setState(() {});
-                        },
-                    )
-                  ]
-                );
+                    subtitle: Text(
+                        intl.DateFormat("d.M.yyyy H:mm")
+                            .format(reading.data.time.toLocal()),
+                        textScaleFactor: 1.2),
+                    onLongPress: () {
+                      showVoltage = !showVoltage;
+                      setState(() {});
+                    },
+                  )
+                  )
+                ]);
               } else if (reading.hasError) {
                 return Text("${reading.error}");
               }
@@ -135,6 +173,7 @@ class TempAarState extends State<TempAar> {
             },
           ),
         ),
-      );
+      ),
+    );
   }
 }
