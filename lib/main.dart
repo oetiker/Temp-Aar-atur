@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
@@ -9,9 +8,7 @@ import 'package:page_view_indicator/page_view_indicator.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:text_to_path_maker/text_to_path_maker.dart';
 import 'temperature_store.dart';
-
-
-
+import 'temperature_chart.dart';
 
 void main() {
   runApp(new MaterialApp(
@@ -75,44 +72,11 @@ class TemperAareState extends State<TemperAare> {
                     onPageChanged: (index) => pageIndexNotifier.value = index,
                     children: [
                       _tempCards(),
-                      _tempList(),
-                      Container(
-                        padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
-                        child: ClipRect(
-                          clipBehavior: Clip.antiAlias,
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-                            child: Card(
-
-                              margin: EdgeInsets.all(0),
-                              color: Color.fromRGBO(255, 255, 255, 0.6),
-                              child: Column(
-
-                                children: [
-                                  Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 3)),
-                                  Flexible(
-                                    flex: 1,
-                                    child: DateTimeComboLinePointChart(
-                                    DateTimeComboLinePointChart
-                                        ._createSampleData(),
-                                    animate: true,
-                                  ),
-                                  ),
-                                  Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 3)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
+                      _tempChart(),
                     ],
                   ),
                 ),
-                _pageViewIndicator(3),
+                _pageViewIndicator(2),
               ],
             ),
           ),
@@ -121,8 +85,38 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  Widget _tempList() {
-    final items = List<String>.generate(1000, (i) => "Item $i");
+  // Widget _tempList() {
+  //   final items = List<String>.generate(1000, (i) => "Item $i");
+  //   return Container(
+  //     padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
+  //     child: ClipRect(
+  //       clipBehavior: Clip.antiAlias,
+  //       child: BackdropFilter(
+  //         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+  //         child: Card(
+  //           margin: EdgeInsets.all(0),
+  //           color: Color.fromRGBO(255, 255, 255, 0.6),
+  //           child: ListView.builder(
+  //             itemCount: items.length,
+  //             itemBuilder: (context, index) {
+  //               return Container(
+  //                 padding: EdgeInsets.all(10),
+  //                 child: Row(
+  //                   children: [
+  //                     Text('Hello'),
+  //                     Text('Du'),
+  //                   ],
+  //                 ),
+  //               );
+  //             },
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _tempChart() {
     return Container(
       padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
       child: ClipRect(
@@ -131,20 +125,10 @@ class TemperAareState extends State<TemperAare> {
           filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Card(
             margin: EdgeInsets.all(0),
-            color: Color.fromRGBO(255, 255, 255, 0.6),
-            child: ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  padding: EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Text('Hello'),
-                      Text('Du'),
-                    ],
-                  ),
-                );
-              },
+            color: Color.fromRGBO(0, 0, 0, 0.2),
+            child: Padding(
+              padding: EdgeInsets.all(5),
+              child: TemperatureChart(),
             ),
           ),
         ),
@@ -172,8 +156,8 @@ class TemperAareState extends State<TemperAare> {
               title: 'Water temperature at -40cm',
               subtitle: data.celsius1.toStringAsFixed(1) + ' °C',
               marginBottom: 0,
-              footer: intl.DateFormat("d.M.yyyy H:mm")
-                  .format(data.time.toLocal()),
+              footer:
+                  intl.DateFormat("d.M.yyyy H:mm").format(data.time.toLocal()),
             ),
           ]);
         } else if (reading.hasError) {
@@ -244,119 +228,23 @@ class TemperAareState extends State<TemperAare> {
   PageViewIndicator _pageViewIndicator(length) {
     return PageViewIndicator(
       pageIndexNotifier: pageIndexNotifier,
+      indicatorPadding: EdgeInsets.fromLTRB(5, 10, 5, 4),
       length: length,
       normalBuilder: (animationController, index) => ScaleTransition(
             scale: CurvedAnimation(
               parent: animationController,
               curve: Curves.ease,
             ),
-            child: Circle(size: 6, color: Colors.white54),
+            child: Circle(size: 7, color: Colors.white54),
           ),
       highlightedBuilder: (animationController, index) => ScaleTransition(
             scale: CurvedAnimation(
               parent: animationController,
               curve: Curves.ease,
             ),
-            child: Circle(size: 6, color: Colors.white),
+            child: Circle(size: 7, color: Colors.white),
           ),
     );
   }
 }
 // reading.data.volt.toStringAsFixed(2) + ' V'
-
-class DateTimeComboLinePointChart extends StatelessWidget {
-  final List<charts.Series> seriesList;
-  final bool animate;
-
-  DateTimeComboLinePointChart(this.seriesList, {this.animate});
-
-  /// Creates a [TimeSeriesChart] with sample data and no transition.
-  factory DateTimeComboLinePointChart.withSampleData() {
-    return new DateTimeComboLinePointChart(
-      _createSampleData(),
-      // Disable animations for image tests.
-      animate: false,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return new charts.TimeSeriesChart(
-      seriesList,
-
-      animate: animate,
-      // Configure the default renderer as a line renderer. This will be used
-      // for any series that does not define a rendererIdKey.
-      //
-      // This is the default configuration, but is shown here for  illustration.
-      defaultRenderer: new charts.LineRendererConfig(),
-      // Custom renderer configuration for the point series.
-      customSeriesRenderers: [
-        new charts.PointRendererConfig(
-            // ID used to link series to this renderer.
-            customRendererId: 'customPoint')
-      ],
-      // Optionally pass in a [DateTimeFactory] used by the chart. The factory
-      // should create the same type of [DateTime] as the data provided. If none
-      // specified, the default creates local date time.
-      dateTimeFactory: const charts.LocalDateTimeFactory(),
-    );
-  }
-
-  /// Create one series with sample hard coded data.
-  static List<charts.Series<TimeSeriesSales, DateTime>> _createSampleData() {
-    final desktopSalesData = [
-      new TimeSeriesSales(new DateTime(2017, 9, 19), 5),
-      new TimeSeriesSales(new DateTime(2017, 9, 26), 25),
-      new TimeSeriesSales(new DateTime(2017, 10, 3), 100),
-      new TimeSeriesSales(new DateTime(2017, 10, 10), 75),
-    ];
-
-    final tableSalesData = [
-      new TimeSeriesSales(new DateTime(2017, 9, 19), 10),
-      new TimeSeriesSales(new DateTime(2017, 9, 26), 50),
-      new TimeSeriesSales(new DateTime(2017, 10, 3), 200),
-      new TimeSeriesSales(new DateTime(2017, 10, 10), 150),
-    ];
-
-    final mobileSalesData = [
-      new TimeSeriesSales(new DateTime(2017, 9, 19), 10),
-      new TimeSeriesSales(new DateTime(2017, 9, 26), 50),
-      new TimeSeriesSales(new DateTime(2017, 10, 3), 200),
-      new TimeSeriesSales(new DateTime(2017, 10, 10), 150),
-    ];
-
-    return [
-      new charts.Series<TimeSeriesSales, DateTime>(
-        id: 'Desktop',
-        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
-        domainFn: (TimeSeriesSales sales, _) => sales.time,
-        measureFn: (TimeSeriesSales sales, _) => sales.sales,
-        data: desktopSalesData,
-      ),
-      new charts.Series<TimeSeriesSales, DateTime>(
-        id: 'Tablet',
-        colorFn: (_, __) => charts.MaterialPalette.red.shadeDefault,
-        domainFn: (TimeSeriesSales sales, _) => sales.time,
-        measureFn: (TimeSeriesSales sales, _) => sales.sales,
-        data: tableSalesData,
-      ),
-      new charts.Series<TimeSeriesSales, DateTime>(
-          id: 'Mobile',
-          colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
-          domainFn: (TimeSeriesSales sales, _) => sales.time,
-          measureFn: (TimeSeriesSales sales, _) => sales.sales,
-          data: mobileSalesData)
-        // Configure our custom point renderer for this series.
-        ..setAttribute(charts.rendererIdKey, 'customPoint'),
-    ];
-  }
-}
-
-/// Sample time series data type.
-class TimeSeriesSales {
-  final DateTime time;
-  final int sales;
-
-  TimeSeriesSales(this.time, this.sales);
-}
