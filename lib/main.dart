@@ -1,14 +1,14 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart' as intl;
 import 'package:page_view_indicator/page_view_indicator.dart';
-import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:text_to_path_maker/text_to_path_maker.dart';
 import 'temperature_store.dart';
 import 'temperature_chart.dart';
+import 'size_config.dart';
 
 void main() {
   runApp(new MaterialApp(
@@ -30,7 +30,6 @@ class TemperAareState extends State<TemperAare> {
   final pageIndexNotifier = ValueNotifier<int>(0);
   final tenMinutes = const Duration(seconds: 800);
   static const length = 3;
-
   @override
   Widget build(BuildContext context) {
     Timer(tenMinutes, () {
@@ -39,7 +38,6 @@ class TemperAareState extends State<TemperAare> {
       setState(() {});
     });
     const Color barColor = Color.fromRGBO(31, 123, 129, 0.7);
-
     return Stack(
       children: [
         Container(
@@ -55,7 +53,7 @@ class TemperAareState extends State<TemperAare> {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text('Aare Temperature in Olten'),
+            title: Text('Aare-Termperatur in Olten'),
             backgroundColor: barColor,
             elevation: 0.0,
           ),
@@ -85,37 +83,6 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  // Widget _tempList() {
-  //   final items = List<String>.generate(1000, (i) => "Item $i");
-  //   return Container(
-  //     padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
-  //     child: ClipRect(
-  //       clipBehavior: Clip.antiAlias,
-  //       child: BackdropFilter(
-  //         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-  //         child: Card(
-  //           margin: EdgeInsets.all(0),
-  //           color: Color.fromRGBO(255, 255, 255, 0.6),
-  //           child: ListView.builder(
-  //             itemCount: items.length,
-  //             itemBuilder: (context, index) {
-  //               return Container(
-  //                 padding: EdgeInsets.all(10),
-  //                 child: Row(
-  //                   children: [
-  //                     Text('Hello'),
-  //                     Text('Du'),
-  //                   ],
-  //                 ),
-  //               );
-  //             },
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget _tempChart() {
     return Container(
       padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
@@ -141,30 +108,65 @@ class TemperAareState extends State<TemperAare> {
     return FutureBuilder<bool>(
       future: storeReady,
       builder: (context, reading) {
+        SizeConfig().init(context);
         if (reading.hasData) {
           TemperatureReading data = TemperatureStore().data.last;
-          return Column(children: [
-            blurCard(
-              icon: Icons.wb_sunny,
-              title: 'Air temperature next to the river',
-              subtitle: data.celsius2.toStringAsFixed(1) + ' °C',
-              marginTop: 10,
+
+          final baseSize = min(SizeConfig.screenWidth, SizeConfig.screenHeight);
+          final isHorizontal = SizeConfig.screenHeight < SizeConfig.screenWidth;
+
+          return Stack(children: [
+            Positioned(
+              top: 30,
+              right: 30,
+              child: blurCircle(
+                width: baseSize / 2.3,
+                text: data.celsius2.toStringAsFixed(1) + ' °C',
+                subtitle: 'Luft',
+                backgroundColor: Color.fromRGBO(119, 170, 252, 0.5),
+              ),
             ),
-            Spacer(flex: 1),
-            blurCard(
-              icon: Icons.opacity,
-              title: 'Water temperature at -40cm',
-              subtitle: data.celsius1.toStringAsFixed(1) + ' °C',
-              marginBottom: 0,
-              footer:
-                  intl.DateFormat("d.M.yyyy H:mm").format(data.time.toLocal()),
+            Positioned(
+                bottom: isHorizontal ? 0 : 60,
+                left: 30,
+                child: blurCircle(
+                  width: baseSize * 0.8 - 60,
+                  text: data.celsius1.toStringAsFixed(1) + ' °C',
+                  subtitle: 'Aare (-40cm)',
+                  backgroundColor: Color.fromRGBO(31, 123, 129, 0.5),
+                )),
+            Positioned(
+              bottom: isHorizontal ? 0 : 0,
+              right: 30,
+              child: blurRect(
+                  text: intl.DateFormat("d.M.yyyy H:mm")
+                      .format(data.time.toLocal()),
+                  width: baseSize * 0.3,
+                  backgroundColor: Color.fromRGBO(0, 0, 0, 0.3)),
             ),
           ]);
         } else if (reading.hasError) {
+          // showDialog(
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       // return object of type Dialog
+          //       return AlertDialog(
+          //         title: new Text("Server access problem"),
+          //         content: new Text("${reading.error}"),
+          //         actions: <Widget>[
+          //           // usually buttons at the bottom of the dialog
+          //           new FlatButton(
+          //             child: new Text("Retry"),
+          //             onPressed: () {
+          //               //TemperatureStore().updateStore();
+          //               //setState((){});
+          //             },
+          //           ),
+          //         ],
+          //       );
+          //     });
           return Center(
-            child: Card(
-              child: Text("${reading.error}"),
-            ),
+            child: Text("${reading.error}"),
           );
         }
         return Center(
@@ -176,48 +178,86 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  Widget blurCard(
-      {String title,
-      String subtitle,
-      IconData icon,
-      double marginTop: 0,
-      double marginBottom: 0,
-      String footer}) {
-    const double iconSize = 50;
-    const double titleScale = 0.8;
-    const double subtitleScale = 2.5;
-    const Color iconColor = Colors.black54;
-    const Color cardColor = Color.fromRGBO(255, 255, 255, 0.5);
+  Widget blurCircle({
+    String text,
+    String subtitle,
+    Color backgroundColor,
+    double width,
+  }) {
     return Container(
-      padding: EdgeInsets.fromLTRB(10, marginTop, 10, marginBottom),
+      width: width,
+      height: width,
+      child: ClipOval(
+        clipBehavior: Clip.antiAlias,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: 1.5,
+            sigmaY: 1.5,
+          ),
+          child: Container(
+            color: backgroundColor,
+            padding: EdgeInsets.all(width / 10),
+            child: Column(
+
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FractionallySizedBox(
+                  widthFactor: 1,
+                  child: FittedBox(
+                  fit: BoxFit.fitWidth,
+                  child: Text(text,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      )),
+                ),
+                ),
+                Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                      ),
+
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget blurRect({
+    String text,
+    Color backgroundColor,
+    double width,
+  }) {
+    return Container(
+      width: width,
       child: ClipRect(
         clipBehavior: Clip.antiAlias,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-          child: Card(
-            margin: EdgeInsets.all(0),
-            color: cardColor,
-            child: Column(
-              children: [
-                Padding(padding: EdgeInsets.symmetric(vertical: 3)),
-                ListTile(
-                  leading: Icon(icon, size: iconSize, color: iconColor),
-                  title: Text(
-                    title,
-                    textScaleFactor: titleScale,
-                  ),
-                  subtitle: Text(
-                    subtitle,
-                    textScaleFactor: subtitleScale,
-                  ),
+          filter: ImageFilter.blur(
+            sigmaX: 1.5,
+            sigmaY: 1.5,
+          ),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              vertical: width / 22,
+              horizontal: width / 12,
+            ),
+            color: backgroundColor,
+            child: FittedBox(
+              fit: BoxFit.fitWidth,
+              child: Text(
+                text,
+                style: TextStyle(
+                  //fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                if (footer != null)
-                  Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                    Text(footer),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 8)),
-                  ]),
-                Padding(padding: EdgeInsets.symmetric(vertical: 3)),
-              ],
+              ),
             ),
           ),
         ),
