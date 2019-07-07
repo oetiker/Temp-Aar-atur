@@ -1,8 +1,9 @@
 import 'dart:math';
+
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'temperature_store.dart';
-
+import 'size_config.dart';
 // https://pub.dev/documentation/charts_common/latest/common/common-library.html
 class TemperatureChart extends StatelessWidget {
   TemperatureChart();
@@ -11,25 +12,27 @@ class TemperatureChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig().init(context);
+    final int fontSize = (min(SizeConfig.screenWidth,SizeConfig.screenHeight)/40).round();
     return Container(
       child: Column(
         children: [
           Flexible(
             flex: 1,
-            child: _timeSeriesChart(_airSeriesList(), 'Air temperature'),
+            child: _timeSeriesChart(_airSeriesList(), 'Luft',fontSize),
           ),
           Flexible(
             flex: 1,
-            child: _timeSeriesChart(_waterSeriesList(), 'Water temperature'),
+            child: _timeSeriesChart(_waterSeriesList(), 'Aare',fontSize),
           )
         ],
       ),
     );
   }
 
-  Widget _timeSeriesChart(list, title) {
+  Widget _timeSeriesChart(list, title, fontSize) {
     final labelStyle = charts.TextStyleSpec(
-      fontSize: 12, // size in Pts.
+      fontSize: fontSize, // size in Pts.
       color: charts.MaterialPalette.white,
     );
     final lineStyle = charts.LineStyleSpec(
@@ -44,7 +47,7 @@ class TemperatureChart extends StatelessWidget {
         charts.ChartTitle(
           title,
           titleStyleSpec: charts.TextStyleSpec(
-            fontSize: 14,
+            fontSize: (fontSize*1.3).round(),
             color: charts.MaterialPalette.white,
           ),
         ),
