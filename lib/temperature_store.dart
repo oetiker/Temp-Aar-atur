@@ -22,7 +22,7 @@ class TemperatureStore {
     }
 
     final response = await http.get(
-      'https://aare-tempi.data.thethingsnetwork.org/api/v2/query/tempi-sensor-aarweg?last=${interval}s',
+      'https://data.ttn.opennetworkinfrastructure.org/aare-tempi/api/v2/query/aare-sensor-faehrweg?last=${interval}s',
       headers: {
         HttpHeaders.acceptHeader: 'application/json',
         HttpHeaders.authorizationHeader:
@@ -34,7 +34,12 @@ class TemperatureStore {
       case 200:
             // If the call to the server was successful, parse the JSON.
         for (Map item in json.decode(response.body)) {
+          // skip if we get bad data;
+          if (!item.containsKey('celsius1')) {
+            continue;
+          }
           var match = _timeParser.firstMatch(item['time']);
+
           _temperatureReadings.add(TemperatureReading(
             celsius1: item['celsius1'],
             celsius2: item['celsius2'],
@@ -53,6 +58,7 @@ class TemperatureStore {
         throw Exception(response.reasonPhrase);
         break;
     }
+    return false;
   }
 
   TemperatureStore._internal();

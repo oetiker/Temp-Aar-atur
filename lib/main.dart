@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart' as intl;
-import 'package:page_view_indicator/page_view_indicator.dart';
 import 'temperature_store.dart';
 import 'temperature_chart.dart';
 import 'size_config.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 void main() {
   runApp(new MaterialApp(
@@ -30,14 +29,25 @@ class TemperAareState extends State<TemperAare> {
   final pageIndexNotifier = ValueNotifier<int>(0);
   final tenMinutes = const Duration(seconds: 800);
   static const length = 3;
+  List<Widget> _children = [
+    _tempCards(),
+    _tempChart(),
+    _info()];
+  int _cIndex = 0;
   @override
   Widget build(BuildContext context) {
     Timer(tenMinutes, () {
-      // setState will call the build method again and thus trigger a data
-      // refresh
+      // setState will call the build method again
+      // and thus trigger a data refresh
       setState(() {});
     });
     const Color barColor = Color.fromRGBO(31, 123, 129, 0.7);
+
+    void _incrementTab(int index) {
+      _cIndex = index;
+      setState(() {});
+    }
+
     return Stack(
       children: [
         Container(
@@ -53,46 +63,82 @@ class TemperAareState extends State<TemperAare> {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text('Aare-Termperatur in Olten'),
+            title: Text('Aare-Temperatur in Olten'),
             backgroundColor: barColor,
             elevation: 0.0,
           ),
-          body: SafeArea(
-            top: false,
-            // height: double.infinity,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: <Widget>[
-                //Text('Hello'),
-                Flexible(
-                  flex: 1,
-                  child: PageView(
-                    onPageChanged: (index) => pageIndexNotifier.value = index,
-                    children: [
-                      _tempCards(),
-                      _tempChart(),
-                    ],
+          bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: barColor,
+            elevation: 0.0,
+            currentIndex: _cIndex,
+            onTap: _incrementTab,
+            items: [
+              BottomNavigationBarItem(
+                icon: new Icon(
+                  Icons.wb_sunny,
+                  color: Color.fromRGBO(255,255,255,0.5),
+                ),
+                activeIcon: new Icon(
+                  Icons.wb_sunny,
+                  color: Color.fromRGBO(255,255,255,1),
+                ),
+                title: new Text(
+                  'Jetzt',
+                  style: TextStyle(
+                    color: Colors.white,
                   ),
                 ),
-                _pageViewIndicator(2),
-              ],
-            ),
+              ),
+              BottomNavigationBarItem(
+                icon: new Icon(
+                  Icons.date_range,
+                  color: Color.fromRGBO(255,255,255,0.5),
+                ),
+                activeIcon: new Icon(
+                  Icons.date_range,
+                  color: Color.fromRGBO(255,255,255,1),
+                ),
+                title: new Text(
+                  'Vergangenheit',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.info,
+                  color: Color.fromRGBO(255,255,255,0.5),
+                ),
+                activeIcon: Icon(
+                  Icons.info,
+                  color: Color.fromRGBO(255,255,255,1),
+                ),
+                title: Text(
+                  'Info',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
+          body: _children[_cIndex],
         ),
       ],
     );
   }
 
-  Widget _tempChart() {
+  static Widget _tempChart() {
     return Container(
-      padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
+      padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
       child: ClipRect(
         clipBehavior: Clip.antiAlias,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-          child: Card(
+          child: Container(
             margin: EdgeInsets.all(0),
-            color: Color.fromRGBO(0, 0, 0, 0.2),
+            color: Color.fromRGBO(0, 0, 0, 0.4),
             child: Padding(
               padding: EdgeInsets.all(5),
               child: TemperatureChart(),
@@ -103,7 +149,77 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  Widget _tempCards() {
+  static Widget _info() {
+    String _markdownData = """# Über TemperAare
+
+Die Temperatur der Aare in Olten ist natürlich nicht massiv anders als in Solothurn oder Aarau, aber trotzdem habe ich mich immer daran gestört, dass der Bund in Olten keine [Hydrodaten-Messtation](https://www.hydrodaten.admin.ch/) an der Aare betreibt, sondern nur an der Dünnern.
+
+Ich habe daher eine eigene kleine Temperaturmessstation mit zwei Temperatursensoren gebaut und sie am Ufer der Aare deponiert. Der eine Sensor misst die Umgebungstemparatur der andere liegt ca 40cm unter der Wasseroberfläche.
+
+Das Messgerät arbeitet mit einer 3000 mAh Li-Ion Batterie. Dank ausgeklügelter Programmierung kann es während vieler Wochen alle paar Minuten die Temperaturen messen und die Messresultate via LoRaWAN an den Server senden. Von da bezieht diese App dann ihre Daten und bereitet sie lokal für die Darstellung auf.
+
+Viel Spass beim Aareschwimmen.
+
+Tobi Oetiker <tobi@oetiker.ch>
+
+""";
+    TextTheme textTheme =
+        new Typography(platform: TargetPlatform.android).black.merge(
+              new TextTheme(
+                body1: new TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                  height: 1.2,
+                ),
+                body2: new TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                ),
+                 headline: new TextStyle(
+                  fontSize: 25.0,
+                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                 title: new TextStyle(
+                  fontSize: 18.0,
+
+                  color: Colors.white,
+                ),
+                 subhead: new TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.white,
+                ),
+              ),
+            );
+    return Container(
+      padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
+      child: ClipRect(
+        clipBehavior: Clip.antiAlias,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: 2,
+            sigmaY: 2,
+          ),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              vertical: 10,
+              horizontal: 10,
+            ),
+            color: Color.fromRGBO(0, 0, 0, 0.4),
+            child: Scrollbar(
+              child: Markdown(
+                data: _markdownData,
+                styleSheet: MarkdownStyleSheet.fromTheme(
+                    ThemeData.dark().copyWith(textTheme: textTheme))
+                ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _tempCards() {
     Future<bool> storeReady = TemperatureStore().updateStore();
     return FutureBuilder<bool>(
       future: storeReady,
@@ -127,21 +243,21 @@ class TemperAareState extends State<TemperAare> {
               ),
             ),
             Positioned(
-                bottom: isHorizontal ? 0 : 60,
+                bottom: isHorizontal ? 10 : 60,
                 left: 30,
                 child: blurCircle(
-                  width: baseSize * 0.8 - 60,
+                  width: baseSize * 0.8 - 80,
                   text: data.celsius1.toStringAsFixed(1) + ' °C',
-                  subtitle: 'Aare (-40cm)',
+                  subtitle: 'Aare',
                   backgroundColor: Color.fromRGBO(31, 123, 129, 0.5),
                 )),
             Positioned(
-              bottom: isHorizontal ? 0 : 0,
+              bottom: isHorizontal ? 10 : 10,
               right: 30,
               child: blurRect(
                   text: intl.DateFormat("d.M.yyyy H:mm")
-                      .format(data.time.toLocal()),
-                  width: baseSize * 0.3,
+                      .format(data.time.toLocal()) + ' / ' + data.volt.toStringAsFixed(2)+'V',
+                  width: baseSize * 0.4,
                   backgroundColor: Color.fromRGBO(0, 0, 0, 0.3)),
             ),
           ]);
@@ -178,7 +294,7 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  Widget blurCircle({
+  static Widget blurCircle({
     String text,
     String subtitle,
     Color backgroundColor,
@@ -198,29 +314,27 @@ class TemperAareState extends State<TemperAare> {
             color: backgroundColor,
             padding: EdgeInsets.all(width / 10),
             child: Column(
-
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 FractionallySizedBox(
                   widthFactor: 1,
                   child: FittedBox(
-                  fit: BoxFit.fitWidth,
-                  child: Text(text,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      )),
-                ),
+                    fit: BoxFit.fitWidth,
+                    child: Text(text,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        )),
+                  ),
                 ),
                 Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 20,
-                        color: Colors.white,
-                      ),
-                      ),
-
+                  subtitle,
+                  style: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
@@ -229,7 +343,7 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  Widget blurRect({
+  static Widget blurRect({
     String text,
     Color backgroundColor,
     double width,
@@ -262,28 +376,6 @@ class TemperAareState extends State<TemperAare> {
           ),
         ),
       ),
-    );
-  }
-
-  PageViewIndicator _pageViewIndicator(length) {
-    return PageViewIndicator(
-      pageIndexNotifier: pageIndexNotifier,
-      indicatorPadding: EdgeInsets.fromLTRB(5, 10, 5, 4),
-      length: length,
-      normalBuilder: (animationController, index) => ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animationController,
-              curve: Curves.ease,
-            ),
-            child: Circle(size: 7, color: Colors.white54),
-          ),
-      highlightedBuilder: (animationController, index) => ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animationController,
-              curve: Curves.ease,
-            ),
-            child: Circle(size: 7, color: Colors.white),
-          ),
     );
   }
 }
