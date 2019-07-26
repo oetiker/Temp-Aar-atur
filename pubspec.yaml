@@ -1,5 +1,5 @@
 name: temp_aar_ature
-description: Live temperature trecking for the Aare in Olten
+description: Live temperature trekking for the Aare in Olten
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -8,10 +8,11 @@ description: Live temperature trecking for the Aare in Olten
 # build by specifying --build-name and --build-number, respectively.
 # In Android, build-name is used as versionName while build-number used as versionCode.
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
+# In iOS, build-name is used as CFBundleShortVersionString
+# while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.0+7
+version: 1.4.0+10
 
 environment:
   sdk: ">=2.2.2 <3.0.0"
@@ -26,9 +27,9 @@ dependencies:
   http: '>=0.11.3+12'
   intl: ^0.15.8
   flutter_launcher_icons: ^0.7.2
-  page_view_indicator: ^2.0.0
   charts_flutter: ^0.6.0
   text_to_path_maker: ^0.5.7
+  flutter_markdown: ^0.2.0
 
 dev_dependencies:
   flutter_test:
