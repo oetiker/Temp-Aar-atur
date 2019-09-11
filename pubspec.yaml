@@ -26,8 +26,8 @@ dependencies:
   cupertino_icons: ^0.1.2
   http: '>=0.11.3+12'
   intl: ^0.15.8
-  flutter_launcher_icons: ^0.7.2
-  charts_flutter: ^0.6.0
+  flutter_launcher_icons: ^0.7.3
+  charts_flutter: ^0.8.0
   text_to_path_maker: ^0.5.7
   flutter_markdown: ^0.2.0
 

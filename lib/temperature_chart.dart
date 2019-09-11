@@ -6,6 +6,29 @@ import 'temperature_store.dart';
 import 'size_config.dart';
 
 // https://pub.dev/documentation/charts_common/latest/common/common-library.html
+
+// https://github.com/google/charts/issues/287#issuecomment-521999694
+class DateTimeAxisSpecWorkaround extends charts.DateTimeAxisSpec {
+
+  const DateTimeAxisSpecWorkaround ({
+    charts.RenderSpec<DateTime> renderSpec,
+    charts.DateTimeTickProviderSpec tickProviderSpec,
+    charts.DateTimeTickFormatterSpec tickFormatterSpec,
+    bool showAxisLine,
+  }) : super(
+            renderSpec: renderSpec,
+            tickProviderSpec: tickProviderSpec,
+            tickFormatterSpec: tickFormatterSpec,
+            showAxisLine: showAxisLine);
+
+  @override
+  configure(charts.Axis<DateTime> axis, charts.ChartContext context,
+      charts.GraphicsFactory graphicsFactory) {
+    super.configure(axis, context, graphicsFactory);
+    axis.autoViewport = false;
+  }
+}
+
 class TemperatureChart extends StatelessWidget {
   TemperatureChart();
 
@@ -41,9 +64,9 @@ class TemperatureChart extends StatelessWidget {
       color: charts.ColorUtil.fromDartColor(Color.fromRGBO(255, 255, 255, 0.4)),
     );
 
-    return charts.TimeSeriesChart(
+    var chart = charts.TimeSeriesChart(
       list,
-      animate: true,
+      animate: false,
       defaultRenderer: charts.LineRendererConfig(
          includeArea: true,
          stacked: true,
@@ -53,7 +76,7 @@ class TemperatureChart extends StatelessWidget {
         charts.ChartTitle(
           title,
           titleStyleSpec: charts.TextStyleSpec(
-            fontSize: (fontSize * 1.3).round(),
+            fontSize: (fontSize * 1.5).round(),
             color: charts.MaterialPalette.white,
           ),
         ),
@@ -67,15 +90,10 @@ class TemperatureChart extends StatelessWidget {
           showVerticalFollowLine:
               charts.LinePointHighlighterFollowLineType.nearest,
         ),
-        //charts.PanAndZoomBehavior(
-          // https://github.com/google/charts/issues/271
-          // panningCompletedCallback: () {},
-        //),
+        charts.PanAndZoomBehavior(),
       ],
       dateTimeFactory: const charts.LocalDateTimeFactory(),
-      domainAxis: charts.DateTimeAxisSpec(
-        // viewport: charts.DateTimeExtents(
-        //     start: list[0].data.first.time, end: list[0].data.last.time),
+      domainAxis: DateTimeAxisSpecWorkaround(
         renderSpec: charts.GridlineRendererSpec(
           labelOffsetFromAxisPx: 8,
           labelStyle: labelStyle,
@@ -87,16 +105,17 @@ class TemperatureChart extends StatelessWidget {
             transitionFormat: 'd.M',
           ),
           hour: charts.TimeFormatterSpec(
-            format: 'h:mm',
-            transitionFormat: 'h:mm',
+            format: 'HH:mm',
+            transitionFormat: 'd.M HH:mm',
           ),
           minute: charts.TimeFormatterSpec(
-            format: 'h:mm:ss',
-            transitionFormat: 'h:mm:ss',
+            format: 'HH:mm:ss',
+            transitionFormat: 'd.M HH:mm:ss',
           ),
+
         ),
-        tickProviderSpec: charts.DayTickProviderSpec(
-          increments: [1],
+        tickProviderSpec: charts.AutoDateTimeTickProviderSpec(
+          includeTime: true
         ),
       ),
       primaryMeasureAxis: charts.NumericAxisSpec(
@@ -108,7 +127,7 @@ class TemperatureChart extends StatelessWidget {
           lineStyle: lineStyle,
         ),
         tickProviderSpec: charts.BasicNumericTickProviderSpec(
-          //dataIsInWholeNumbers: true,
+          dataIsInWholeNumbers: true,
           desiredMinTickCount: 8,
           desiredMaxTickCount: 12,
           desiredTickCount: 12,
@@ -116,6 +135,7 @@ class TemperatureChart extends StatelessWidget {
         ),
       ),
     );
+    return chart;
   }
 
   /// Create one series with sample hard coded data.
@@ -124,7 +144,7 @@ class TemperatureChart extends StatelessWidget {
       new charts.Series<TemperatureReading, DateTime>(
         id: 'Water',
         strokeWidthPxFn: (_, __) => 3,
-        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+        colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
         domainFn: (TemperatureReading reading, _) => reading.time,
         measureFn: (TemperatureReading reading, _) => reading.celsius1,
         data: TemperatureStore().data,
@@ -140,7 +160,7 @@ class TemperatureChart extends StatelessWidget {
       new charts.Series<TemperatureReading, DateTime>(
         id: 'Air',
         strokeWidthPxFn: (_, __) => 3,
-        colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
+        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
         domainFn: (TemperatureReading reading, _) => reading.time,
         measureFn: (TemperatureReading reading, _) => reading.celsius2,
         data: TemperatureStore().data,
