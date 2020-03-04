@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart' as intl;
 import 'temperature_store.dart';
 import 'temperature_chart.dart';
@@ -15,9 +15,18 @@ void main() {
     title: 'TemperAare - Olten',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
+
       primarySwatch: Colors.blue,
     ),
   ));
+}
+
+_launchURL(String href) async {
+  if (await canLaunch(href)) {
+    await launch(href);
+  } else {
+   throw 'Could not launch $href';
+  }
 }
 
 class TemperAare extends StatefulWidget {
@@ -25,22 +34,54 @@ class TemperAare extends StatefulWidget {
   TemperAareState createState() => new TemperAareState();
 }
 
-class TemperAareState extends State<TemperAare> {
-  final pageIndexNotifier = ValueNotifier<int>(0);
-  final tenMinutes = const Duration(seconds: 800);
-  static const length = 3;
-  List<Widget> _children = [
-    _tempCards(),
-    _tempChart(),
-    _info()];
-  int _cIndex = 0;
+class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
+
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    WidgetsBinding.instance.addObserver(this);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        setState(() {});
+        break;
+      default:
+        break;
+    }
+  }
+
+  final pageIndexNotifier = ValueNotifier<int>(0);
+  final tenMinutes = const Duration(seconds: 700);
+  static const length = 3;
+
+  int _cIndex = 0;
+
+  void reloader() {
     Timer(tenMinutes, () {
       // setState will call the build method again
       // and thus trigger a data refresh
-      setState(() {});
+      setState(() {
+      });
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> _children = [
+      _tempCards(),
+      _tempChart(),
+      _info()
+    ];
+    reloader();
     const Color barColor = Color.fromRGBO(31, 123, 129, 0.7);
 
     void _incrementTab(int index) {
@@ -129,7 +170,7 @@ class TemperAareState extends State<TemperAare> {
     );
   }
 
-  static Widget _tempChart() {
+  Widget _tempChart() {
     return Container(
       padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
       child: ClipRect(
@@ -156,36 +197,36 @@ Die Temperatur der Aare in Olten ist natürlich nicht massiv anders als in Solot
 
 Ich habe daher eine eigene kleine Temperaturmessstation mit zwei Temperatursensoren gebaut und sie am Ufer der Aare deponiert. Der eine Sensor misst die Umgebungstemparatur der andere liegt ca 40cm unter der Wasseroberfläche.
 
-Das Messgerät arbeitet mit einer 3000 mAh Li-Ion Batterie. Dank ausgeklügelter Programmierung kann es während vieler Wochen alle paar Minuten die Temperaturen messen und die Messresultate via LoRaWAN an den Server senden. Von da bezieht diese App dann ihre Daten und bereitet sie lokal für die Darstellung auf.
+Das Messgerät arbeitet mit einer 3000 mAh Li-Ion Batterie. Dank ausgeklügelter Programmierung kann es während vieler Wochen alle paar Minuten die Temperaturen messen und die Messresultate via LoRaWAN an den Server senden. Von da bezieht [diese App](https://github.com/oetiker/Temp-Aar-atur) dann ihre Daten und bereitet sie lokal für die Darstellung auf.
 
 Viel Spass beim Aareschwimmen.
 
-Tobi Oetiker <tobi@oetiker.ch>
+[Tobias Oetiker](mailto:tobi@oetiker.ch?subject=TemperAare)
 
 """;
     TextTheme textTheme =
-        new Typography(platform: TargetPlatform.android).black.merge(
+        new Typography.material2018(platform: TargetPlatform.android).black.merge(
               new TextTheme(
-                body1: new TextStyle(
+                bodyText2: new TextStyle(
                   fontSize: 16.0,
                   color: Colors.white,
                   height: 1.2,
                 ),
-                body2: new TextStyle(
+                bodyText1: new TextStyle(
                   fontSize: 16.0,
                   color: Colors.white,
                 ),
-                 headline: new TextStyle(
+                 headline5: new TextStyle(
                   fontSize: 25.0,
                    fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
-                 title: new TextStyle(
+                 headline6: new TextStyle(
                   fontSize: 18.0,
 
                   color: Colors.white,
                 ),
-                 subhead: new TextStyle(
+                subtitle1: new TextStyle(
                   fontSize: 18.0,
                   color: Colors.white,
                 ),
@@ -209,6 +250,7 @@ Tobi Oetiker <tobi@oetiker.ch>
             child: Scrollbar(
               child: Markdown(
                 data: _markdownData,
+                onTapLink: (href) { _launchURL(href); },
                 styleSheet: MarkdownStyleSheet.fromTheme(
                     ThemeData.dark().copyWith(textTheme: textTheme))
                 ),
@@ -219,11 +261,12 @@ Tobi Oetiker <tobi@oetiker.ch>
     );
   }
 
-  static Widget _tempCards() {
+  Widget _tempCards() {
     Future<bool> storeReady = TemperatureStore().updateStore();
     return FutureBuilder<bool>(
       future: storeReady,
       builder: (context, reading) {
+        // print("temp card");
         SizeConfig().init(context);
         if (reading.hasData) {
           TemperatureReading data = TemperatureStore().data.last;
@@ -322,7 +365,10 @@ Tobi Oetiker <tobi@oetiker.ch>
                     fit: BoxFit.fitWidth,
                     child: Text(text,
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: [
+                            FontFeature.proportionalFigures()
+                          ],
                           color: Colors.white,
                         )),
                   ),
@@ -331,7 +377,7 @@ Tobi Oetiker <tobi@oetiker.ch>
                   subtitle,
                   style: TextStyle(
                     fontWeight: FontWeight.normal,
-                    fontSize: 20,
+                    fontSize: 25,
                     color: Colors.white,
                   ),
                 ),
@@ -368,7 +414,11 @@ Tobi Oetiker <tobi@oetiker.ch>
               child: Text(
                 text,
                 style: TextStyle(
-                  //fontWeight: FontWeight.bold,
+                  // fontWeight: FontWeight.bold,
+                  fontFeatures: [
+                    FontFeature.proportionalFigures(),
+                    // FontFeature.oldstyleFigures(),
+                  ],
                   color: Colors.white,
                 ),
               ),

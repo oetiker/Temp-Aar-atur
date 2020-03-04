@@ -12,8 +12,8 @@ class TemperatureStore {
     return _singleton;
   }
   final RegExp _timeParser = new RegExp(r"(.+\.\d{1,6})\d*.*Z");
-  static int _lastCall = (DateTime.now().millisecondsSinceEpoch / 1000).floor() - 7*24*3600;
-
+  static int _lastCall = (DateTime.now().millisecondsSinceEpoch / 1000).floor() - 14*24*3600;
+  static String _prevMatch = '2020-02-26T08:22:11.900979';
   Future<bool> updateStore() async {
     int now = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
     int interval = now - _lastCall;
@@ -29,7 +29,7 @@ class TemperatureStore {
             'key ttn-account-v2.vO1iK1sVuNaUq-zm8aDVNK53d_uHv9eEO8lrDbMbyX0'
       },
     );
-
+    // print(response.statusCode);
     switch (response.statusCode) {
       case 200:
             // If the call to the server was successful, parse the JSON.
@@ -39,13 +39,16 @@ class TemperatureStore {
             continue;
           }
           var match = _timeParser.firstMatch(item['time']);
-
-          _temperatureReadings.add(TemperatureReading(
-            celsius1: item['celsius1'],
-            celsius2: item['celsius2'],
-            volt: item['volt'],
-            time: DateTime.parse(match[1] + 'Z')
-          ));
+          if (match != null && match[1].compareTo(_prevMatch) > 0) {
+            _temperatureReadings.add(TemperatureReading(
+              celsius1: item['celsius1'],
+              celsius2: item['celsius2'],
+              volt: item['volt'],
+              time: DateTime.parse(match[1] + 'Z')
+            ));
+            _prevMatch = match[1];
+            // print(_prevMatch);
+          }
         }
         continue ok;
       ok:
