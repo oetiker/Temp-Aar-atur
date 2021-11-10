@@ -22,7 +22,8 @@ class TemperatureStore {
     }
 
     final response = await http.get(
-      'https://data.ttn.opennetworkinfrastructure.org/aare-tempi/api/v2/query/aare-sensor-faehrweg?last=${interval}s',
+     Uri.parse(
+      'https://data.ttn.opennetworkinfrastructure.org/aare-tempi/api/v2/query/aare-sensor-faehrweg?last=${interval}s'),
       headers: {
         HttpHeaders.acceptHeader: 'application/json',
         HttpHeaders.authorizationHeader:

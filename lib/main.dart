@@ -15,7 +15,6 @@ void main() {
     title: 'TemperAare - Olten',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
-
       primarySwatch: Colors.blue,
     ),
   ));
@@ -25,7 +24,7 @@ _launchURL(String href) async {
   if (await canLaunch(href)) {
     await launch(href);
   } else {
-   throw 'Could not launch $href';
+    throw 'Could not launch $href';
   }
 }
 
@@ -35,7 +34,6 @@ class TemperAare extends StatefulWidget {
 }
 
 class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
-
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
@@ -69,18 +67,13 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
     Timer(tenMinutes, () {
       // setState will call the build method again
       // and thus trigger a data refresh
-      setState(() {
-      });
+      setState(() {});
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> _children = [
-      _tempCards(),
-      _tempChart(),
-      _info()
-    ];
+    List<Widget> _children = [_tempCards(), _tempChart(), _info()];
     reloader();
     const Color barColor = Color.fromRGBO(31, 123, 129, 0.7);
 
@@ -110,6 +103,8 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
           ),
           bottomNavigationBar: BottomNavigationBar(
             backgroundColor: barColor,
+            selectedItemColor: Color.fromRGBO(255, 255, 255, 1),
+            unselectedItemColor: Color.fromRGBO(255, 255, 255, 0.5),
             elevation: 0.0,
             currentIndex: _cIndex,
             onTap: _incrementTab,
@@ -117,50 +112,20 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
               BottomNavigationBarItem(
                 icon: new Icon(
                   Icons.wb_sunny,
-                  color: Color.fromRGBO(255,255,255,0.5),
                 ),
-                activeIcon: new Icon(
-                  Icons.wb_sunny,
-                  color: Color.fromRGBO(255,255,255,1),
-                ),
-                title: new Text(
-                  'Jetzt',
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
+                label: 'Jetzt',
               ),
               BottomNavigationBarItem(
                 icon: new Icon(
                   Icons.date_range,
-                  color: Color.fromRGBO(255,255,255,0.5),
                 ),
-                activeIcon: new Icon(
-                  Icons.date_range,
-                  color: Color.fromRGBO(255,255,255,1),
-                ),
-                title: new Text(
-                  'Vergangenheit',
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
+                label: 'Vergangenheit',
               ),
               BottomNavigationBarItem(
                 icon: Icon(
                   Icons.info,
-                  color: Color.fromRGBO(255,255,255,0.5),
                 ),
-                activeIcon: Icon(
-                  Icons.info,
-                  color: Color.fromRGBO(255,255,255,1),
-                ),
-                title: Text(
-                  'Info',
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
+                label: 'Info',
               ),
             ],
           ),
@@ -205,7 +170,9 @@ Viel Spass beim Aareschwimmen.
 
 """;
     TextTheme textTheme =
-        new Typography.material2018(platform: TargetPlatform.android).black.merge(
+        new Typography.material2018(platform: TargetPlatform.android)
+            .black
+            .merge(
               new TextTheme(
                 bodyText2: new TextStyle(
                   fontSize: 16.0,
@@ -216,14 +183,13 @@ Viel Spass beim Aareschwimmen.
                   fontSize: 16.0,
                   color: Colors.white,
                 ),
-                 headline5: new TextStyle(
+                headline5: new TextStyle(
                   fontSize: 25.0,
-                   fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
-                 headline6: new TextStyle(
+                headline6: new TextStyle(
                   fontSize: 18.0,
-
                   color: Colors.white,
                 ),
                 subtitle1: new TextStyle(
@@ -249,11 +215,12 @@ Viel Spass beim Aareschwimmen.
             color: Color.fromRGBO(0, 0, 0, 0.4),
             child: Scrollbar(
               child: Markdown(
-                data: _markdownData,
-                onTapLink: (href) { _launchURL(href); },
-                styleSheet: MarkdownStyleSheet.fromTheme(
-                    ThemeData.dark().copyWith(textTheme: textTheme))
-                ),
+                  data: _markdownData,
+                  onTapLink: (text, url, title) {
+                    _launchURL(url);
+                  },
+                  styleSheet: MarkdownStyleSheet.fromTheme(
+                      ThemeData.dark().copyWith(textTheme: textTheme))),
             ),
           ),
         ),
@@ -299,7 +266,10 @@ Viel Spass beim Aareschwimmen.
               right: 30,
               child: blurRect(
                   text: intl.DateFormat("d.M.yyyy H:mm")
-                      .format(data.time.toLocal()) + ' / ' + data.volt.toStringAsFixed(2)+'V',
+                          .format(data.time.toLocal()) +
+                      ' / ' +
+                      data.volt.toStringAsFixed(2) +
+                      'V',
                   width: baseSize * 0.4,
                   backgroundColor: Color.fromRGBO(0, 0, 0, 0.3)),
             ),
@@ -366,9 +336,7 @@ Viel Spass beim Aareschwimmen.
                     child: Text(text,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontFeatures: [
-                            FontFeature.proportionalFigures()
-                          ],
+                          fontFeatures: [FontFeature.proportionalFigures()],
                           color: Colors.white,
                         )),
                   ),

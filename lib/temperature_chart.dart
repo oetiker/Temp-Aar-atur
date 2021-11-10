@@ -141,7 +141,7 @@ class TemperatureChart extends StatelessWidget {
   /// Create one series with sample hard coded data.
   static List<charts.Series<TemperatureReading, DateTime>> _waterSeriesList() {
     return [
-      new charts.Series<TemperatureReading, DateTime>(
+     charts.Series<TemperatureReading, DateTime>(
         id: 'Water',
         strokeWidthPxFn: (_, __) => 3,
         colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
@@ -157,7 +157,7 @@ class TemperatureChart extends StatelessWidget {
   /// Create one series with sample hard coded data.
   static List<charts.Series<TemperatureReading, DateTime>> _airSeriesList() {
     return [
-      new charts.Series<TemperatureReading, DateTime>(
+      charts.Series<TemperatureReading, DateTime>(
         id: 'Air',
         strokeWidthPxFn: (_, __) => 3,
         colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
