@@ -23,11 +23,11 @@ class TemperatureStore {
 
     final response = await http.get(
      Uri.parse(
-      'https://data.ttn.opennetworkinfrastructure.org/aare-tempi/api/v2/query/aare-sensor-faehrweg?last=${interval}s'),
+      'https://temperaare.ch/REST/v1/query/faehrweg?last=${interval}s'),
       headers: {
         HttpHeaders.acceptHeader: 'application/json',
         HttpHeaders.authorizationHeader:
-            'key ttn-account-v2.vO1iK1sVuNaUq-zm8aDVNK53d_uHv9eEO8lrDbMbyX0'
+            'as8jkhaksdlfhahjsfdf'
       },
     );
     // print(response.statusCode);
