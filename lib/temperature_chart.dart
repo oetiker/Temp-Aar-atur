@@ -9,17 +9,16 @@ import 'size_config.dart';
 
 // https://github.com/google/charts/issues/287#issuecomment-521999694
 class DateTimeAxisSpecWorkaround extends charts.DateTimeAxisSpec {
-
-  const DateTimeAxisSpecWorkaround ({
-    charts.RenderSpec<DateTime> renderSpec,
-    charts.DateTimeTickProviderSpec tickProviderSpec,
-    charts.DateTimeTickFormatterSpec tickFormatterSpec,
-    bool showAxisLine,
+  const DateTimeAxisSpecWorkaround({
+    charts.RenderSpec<DateTime>? renderSpec,
+    charts.DateTimeTickProviderSpec? tickProviderSpec,
+    charts.DateTimeTickFormatterSpec? tickFormatterSpec,
+    bool? showAxisLine, viewport
   }) : super(
             renderSpec: renderSpec,
             tickProviderSpec: tickProviderSpec,
             tickFormatterSpec: tickFormatterSpec,
-            showAxisLine: showAxisLine);
+            showAxisLine: showAxisLine, viewport: viewport);
 
   @override
   configure(charts.Axis<DateTime> axis, charts.ChartContext context,
@@ -30,28 +29,24 @@ class DateTimeAxisSpecWorkaround extends charts.DateTimeAxisSpec {
 }
 
 class TemperatureChart extends StatelessWidget {
-  TemperatureChart();
-
-  /// Create random data.
-
+  const TemperatureChart({Key? key}) : super(key: key);
+  
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
     final int fontSize =
         (min(SizeConfig.screenWidth, SizeConfig.screenHeight) / 40).round();
-    return Container(
-      child: Column(
-        children: [
-          Flexible(
-            flex: 1,
-            child: _timeSeriesChart(_airSeriesList(), 'Luft', fontSize),
-          ),
-          Flexible(
-            flex: 1,
-            child: _timeSeriesChart(_waterSeriesList(), 'Aare', fontSize),
-          )
-        ],
-      ),
+    return Column(
+      children: [
+        Flexible(
+          flex: 1,
+          child: _timeSeriesChart(_airSeriesList(), 'Luft', fontSize),
+        ),
+        Flexible(
+          flex: 1,
+          child: _timeSeriesChart(_waterSeriesList(), 'Aare', fontSize),
+        )
+      ],
     );
   }
 
@@ -61,15 +56,19 @@ class TemperatureChart extends StatelessWidget {
       color: charts.MaterialPalette.white,
     );
     final lineStyle = charts.LineStyleSpec(
-      color: charts.ColorUtil.fromDartColor(Color.fromRGBO(255, 255, 255, 0.4)),
+      color: charts.ColorUtil.fromDartColor(const Color.fromRGBO(255, 255, 255, 0.4)),
     );
 
     var chart = charts.TimeSeriesChart(
       list,
       animate: false,
       defaultRenderer: charts.LineRendererConfig(
-         includeArea: true,
-         stacked: true,
+        includeArea: true,
+        stacked: false,
+        areaOpacity: 0.6,
+        includePoints: false,
+        includeLine: true,
+        strokeWidthPx: 1,
       ),
       behaviors: [
         // charts.SeriesLegend(entryTextStyle: labelStyle),
@@ -99,7 +98,7 @@ class TemperatureChart extends StatelessWidget {
           labelStyle: labelStyle,
           lineStyle: lineStyle,
         ),
-        tickFormatterSpec: charts.AutoDateTimeTickFormatterSpec(
+        tickFormatterSpec: const charts.AutoDateTimeTickFormatterSpec(
           day: charts.TimeFormatterSpec(
             format: 'd.M',
             transitionFormat: 'd.M',
@@ -112,11 +111,9 @@ class TemperatureChart extends StatelessWidget {
             format: 'HH:mm:ss',
             transitionFormat: 'd.M HH:mm:ss',
           ),
-
         ),
-        tickProviderSpec: charts.AutoDateTimeTickProviderSpec(
-          includeTime: true
-        ),
+        tickProviderSpec:
+            const charts.AutoDateTimeTickProviderSpec(includeTime: true),
       ),
       primaryMeasureAxis: charts.NumericAxisSpec(
         showAxisLine: true,
@@ -126,7 +123,7 @@ class TemperatureChart extends StatelessWidget {
           // Change the line colors to match text color.
           lineStyle: lineStyle,
         ),
-        tickProviderSpec: charts.BasicNumericTickProviderSpec(
+        tickProviderSpec: const charts.BasicNumericTickProviderSpec(
           dataIsInWholeNumbers: true,
           desiredMinTickCount: 8,
           desiredMaxTickCount: 12,
@@ -139,34 +136,33 @@ class TemperatureChart extends StatelessWidget {
   }
 
   /// Create one series with sample hard coded data.
-  static List<charts.Series<TemperatureReading, DateTime>> _waterSeriesList() {
+  static List<charts.Series<dynamic, DateTime>> _waterSeriesList() {
     return [
-     charts.Series<TemperatureReading, DateTime>(
+      charts.Series<TemperatureReading, DateTime>(
         id: 'Water',
-        strokeWidthPxFn: (_, __) => 3,
         colorFn: (_, __) => charts.MaterialPalette.green.shadeDefault,
         domainFn: (TemperatureReading reading, _) => reading.time,
         measureFn: (TemperatureReading reading, _) => reading.celsius1,
         data: TemperatureStore().data,
-        domainLowerBoundFn: (_, __) => TemperatureStore().data.first.time,
-        domainUpperBoundFn: (_, __) => TemperatureStore().data.last.time,
+        domainLowerBoundFn: (_, __) => DateTime.now().subtract(const Duration(days: 7)),
+        domainUpperBoundFn: (_, __) => DateTime.now(),
       ),
     ];
   }
 
   /// Create one series with sample hard coded data.
-  static List<charts.Series<TemperatureReading, DateTime>> _airSeriesList() {
+  static List<charts.Series<dynamic, DateTime>> _airSeriesList() {
     return [
       charts.Series<TemperatureReading, DateTime>(
         id: 'Air',
-        strokeWidthPxFn: (_, __) => 3,
         colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
         domainFn: (TemperatureReading reading, _) => reading.time,
         measureFn: (TemperatureReading reading, _) => reading.celsius2,
         data: TemperatureStore().data,
-        domainLowerBoundFn: (_, __) => TemperatureStore().data.first.time,
-        domainUpperBoundFn: (_, __) => TemperatureStore().data.last.time,
+       domainLowerBoundFn: (_, __) => DateTime.now().subtract(const Duration(days: 7)),
+        domainUpperBoundFn: (_, __) => DateTime.now(),
       )
     ];
   }
 }
+

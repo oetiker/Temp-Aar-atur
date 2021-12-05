@@ -71,3 +71,6 @@
 device-registration.png
 .flutter-plugins-dependencies
 android.offline
+key.properties
+upload_certificate.pem
+fulldump

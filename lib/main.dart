@@ -10,8 +10,8 @@ import 'size_config.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 void main() {
-  runApp(new MaterialApp(
-    home: new TemperAare(),
+  runApp(MaterialApp(
+    home: const TemperAare(),
     title: 'TemperAare - Olten',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
@@ -29,20 +29,22 @@ _launchURL(String href) async {
 }
 
 class TemperAare extends StatefulWidget {
+  const TemperAare({Key? key}) : super(key: key);
+
   @override
-  TemperAareState createState() => new TemperAareState();
+  TemperAareState createState() => TemperAareState();
 }
 
 class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
   @override
   void initState() {
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance!.addObserver(this);
     super.initState();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance!.removeObserver(this);
     super.dispose();
   }
 
@@ -87,7 +89,7 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
         Container(
           height: double.infinity,
           width: double.infinity,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             image: DecorationImage(
               image: AssetImage('assets/background.jpg'),
               fit: BoxFit.cover,
@@ -97,26 +99,26 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text('Aare-Temperatur in Olten'),
+            title: const Text('Aare-Temperatur in Olten'),
             backgroundColor: barColor,
             elevation: 0.0,
           ),
           bottomNavigationBar: BottomNavigationBar(
             backgroundColor: barColor,
-            selectedItemColor: Color.fromRGBO(255, 255, 255, 1),
-            unselectedItemColor: Color.fromRGBO(255, 255, 255, 0.5),
+            selectedItemColor: const Color.fromRGBO(255, 255, 255, 1),
+            unselectedItemColor: const Color.fromRGBO(255, 255, 255, 0.5),
             elevation: 0.0,
             currentIndex: _cIndex,
             onTap: _incrementTab,
-            items: [
+            items: const [
               BottomNavigationBarItem(
-                icon: new Icon(
+                icon: Icon(
                   Icons.wb_sunny,
                 ),
                 label: 'Jetzt',
               ),
               BottomNavigationBarItem(
-                icon: new Icon(
+                icon: Icon(
                   Icons.date_range,
                 ),
                 label: 'Vergangenheit',
@@ -137,15 +139,15 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
 
   Widget _tempChart() {
     return Container(
-      padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
       child: ClipRect(
         clipBehavior: Clip.antiAlias,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
           child: Container(
-            margin: EdgeInsets.all(0),
-            color: Color.fromRGBO(0, 0, 0, 0.4),
-            child: Padding(
+            margin: const EdgeInsets.all(0),
+            color: const Color.fromRGBO(0, 0, 0, 0.4),
+            child: const Padding(
               padding: EdgeInsets.all(5),
               child: TemperatureChart(),
             ),
@@ -160,46 +162,44 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
 
 Die Temperatur der Aare in Olten ist natürlich nicht massiv anders als in Solothurn oder Aarau, aber trotzdem habe ich mich immer daran gestört, dass der Bund in Olten keine [Hydrodaten-Messtation](https://www.hydrodaten.admin.ch/) an der Aare betreibt, sondern nur an der Dünnern.
 
-Ich habe daher eine eigene kleine Temperaturmessstation mit zwei Temperatursensoren gebaut und sie am Ufer der Aare deponiert. Der eine Sensor misst die Umgebungstemparatur der andere liegt ca 40cm unter der Wasseroberfläche.
+Ich habe daher eine eigene kleine Temperaturmessstation mit zwei Temperatursensoren gebaut und sie am Ufer der Aare deponiert. Der eine Sensor misst die Umgebungstemparatur, der andere liegt ca. 40 cm unter der Wasseroberfläche.
 
-Das Messgerät arbeitet mit einer 3000 mAh Li-Ion Batterie. Dank ausgeklügelter Programmierung kann es während vieler Wochen alle paar Minuten die Temperaturen messen und die Messresultate via LoRaWAN an den Server senden. Von da bezieht [diese App](https://github.com/oetiker/Temp-Aar-atur) dann ihre Daten und bereitet sie lokal für die Darstellung auf.
+Das Messgerät arbeitet mit einer 3000 mAh-Li-Ion-Batterie. Dank ausgeklügelter Programmierung kann es während vieler Wochen alle paar Minuten die Temperaturen messen und die Resultate via LoRaWAN an den Server senden. Die [App](https://github.com/oetiker/Temp-Aar-atur) bezieht ihre Daten direkt vom Server und bereitet sie lokal für die Darstellung auf.
 
-Viel Spass beim Aareschwimmen.
+Viel Spass beim Aareschwimmen!
 
 [Tobias Oetiker](mailto:tobi@oetiker.ch?subject=TemperAare)
 
 """;
     TextTheme textTheme =
-        new Typography.material2018(platform: TargetPlatform.android)
-            .black
-            .merge(
-              new TextTheme(
-                bodyText2: new TextStyle(
+        Typography.material2018(platform: TargetPlatform.android).black.merge(
+              const TextTheme(
+                bodyText2: TextStyle(
                   fontSize: 16.0,
                   color: Colors.white,
                   height: 1.2,
                 ),
-                bodyText1: new TextStyle(
+                bodyText1: TextStyle(
                   fontSize: 16.0,
                   color: Colors.white,
                 ),
-                headline5: new TextStyle(
+                headline5: TextStyle(
                   fontSize: 25.0,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
-                headline6: new TextStyle(
+                headline6: TextStyle(
                   fontSize: 18.0,
                   color: Colors.white,
                 ),
-                subtitle1: new TextStyle(
+                subtitle1: TextStyle(
                   fontSize: 18.0,
                   color: Colors.white,
                 ),
               ),
             );
     return Container(
-      padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
       child: ClipRect(
         clipBehavior: Clip.antiAlias,
         child: BackdropFilter(
@@ -208,16 +208,16 @@ Viel Spass beim Aareschwimmen.
             sigmaY: 2,
           ),
           child: Container(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               vertical: 10,
               horizontal: 10,
             ),
-            color: Color.fromRGBO(0, 0, 0, 0.4),
+            color: const Color.fromRGBO(0, 0, 0, 0.4),
             child: Scrollbar(
               child: Markdown(
                   data: _markdownData,
                   onTapLink: (text, url, title) {
-                    _launchURL(url);
+                    _launchURL(url!);
                   },
                   styleSheet: MarkdownStyleSheet.fromTheme(
                       ThemeData.dark().copyWith(textTheme: textTheme))),
@@ -249,7 +249,7 @@ Viel Spass beim Aareschwimmen.
                 width: baseSize / 2.3,
                 text: data.celsius2.toStringAsFixed(1) + ' °C',
                 subtitle: 'Luft',
-                backgroundColor: Color.fromRGBO(119, 170, 252, 0.5),
+                backgroundColor: const Color.fromRGBO(119, 170, 252, 0.5),
               ),
             ),
             Positioned(
@@ -259,7 +259,7 @@ Viel Spass beim Aareschwimmen.
                   width: baseSize * 0.8 - 80,
                   text: data.celsius1.toStringAsFixed(1) + ' °C',
                   subtitle: 'Aare',
-                  backgroundColor: Color.fromRGBO(31, 123, 129, 0.5),
+                  backgroundColor: const Color.fromRGBO(31, 123, 129, 0.5),
                 )),
             Positioned(
               bottom: isHorizontal ? 10 : 10,
@@ -271,7 +271,7 @@ Viel Spass beim Aareschwimmen.
                       data.volt.toStringAsFixed(2) +
                       'V',
                   width: baseSize * 0.4,
-                  backgroundColor: Color.fromRGBO(0, 0, 0, 0.3)),
+                  backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3)),
             ),
           ]);
         } else if (reading.hasError) {
@@ -298,7 +298,7 @@ Viel Spass beim Aareschwimmen.
             child: Text("${reading.error}"),
           );
         }
-        return Center(
+        return const Center(
           child: CircularProgressIndicator(
             backgroundColor: Colors.transparent,
           ),
@@ -308,12 +308,12 @@ Viel Spass beim Aareschwimmen.
   }
 
   static Widget blurCircle({
-    String text,
-    String subtitle,
-    Color backgroundColor,
-    double width,
+    required String text,
+    required String subtitle,
+    Color? backgroundColor,
+    required double width,
   }) {
-    return Container(
+    return SizedBox(
       width: width,
       height: width,
       child: ClipOval(
@@ -334,7 +334,7 @@ Viel Spass beim Aareschwimmen.
                   child: FittedBox(
                     fit: BoxFit.fitWidth,
                     child: Text(text,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontFeatures: [FontFeature.proportionalFigures()],
                           color: Colors.white,
@@ -343,7 +343,7 @@ Viel Spass beim Aareschwimmen.
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.normal,
                     fontSize: 25,
                     color: Colors.white,
@@ -358,11 +358,11 @@ Viel Spass beim Aareschwimmen.
   }
 
   static Widget blurRect({
-    String text,
-    Color backgroundColor,
-    double width,
+    required String text,
+    Color? backgroundColor,
+    required double width,
   }) {
-    return Container(
+    return SizedBox(
       width: width,
       child: ClipRect(
         clipBehavior: Clip.antiAlias,
@@ -381,7 +381,7 @@ Viel Spass beim Aareschwimmen.
               fit: BoxFit.fitWidth,
               child: Text(
                 text,
-                style: TextStyle(
+                style: const TextStyle(
                   // fontWeight: FontWeight.bold,
                   fontFeatures: [
                     FontFeature.proportionalFigures(),
