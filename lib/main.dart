@@ -4,10 +4,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart' as intl;
-import 'temperature_store.dart';
-import 'temperature_chart.dart';
+import 'data_store.dart';
+import 'data_chart.dart';
 import 'size_config.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+
 
 void main() {
   runApp(MaterialApp(
@@ -21,8 +21,9 @@ void main() {
 }
 
 _launchURL(String href) async {
-  if (await canLaunch(href)) {
-    await launch(href);
+  var uri = Uri.parse(href);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
   } else {
     throw 'Could not launch $href';
   }
@@ -38,13 +39,15 @@ class TemperAare extends StatefulWidget {
 class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
   @override
   void initState() {
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+    reloader();
     super.initState();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance!.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -64,9 +67,11 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
   static const length = 3;
 
   int _cIndex = 0;
+  Timer? _timer;
 
   void reloader() {
-    Timer(tenMinutes, () {
+    _timer?.cancel(); // Cancel any existing timer
+    _timer = Timer(tenMinutes, () {
       // setState will call the build method again
       // and thus trigger a data refresh
       setState(() {});
@@ -75,13 +80,15 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> _children = [_tempCards(), _tempChart(), _info()];
+    List<Widget> children = [_tempCards(), _tempChart(), _info()];
     reloader();
     const Color barColor = Color.fromRGBO(31, 123, 129, 0.7);
-
-    void _incrementTab(int index) {
-      _cIndex = index;
-      setState(() {});
+    final PageController pageController = PageController();
+    void onTappedBar(int value) {
+      setState(() {
+        _cIndex = value;
+      });
+      pageController.animateToPage(value,duration: const Duration(milliseconds: 300), curve: Curves.elasticOut);
     }
 
     return Stack(
@@ -99,17 +106,24 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: const Text('Aare-Temperatur in Olten'),
+            title: const Text(
+              'Aare-Temperatur in Olten',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             backgroundColor: barColor,
             elevation: 0.0,
           ),
           bottomNavigationBar: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
             backgroundColor: barColor,
             selectedItemColor: const Color.fromRGBO(255, 255, 255, 1),
             unselectedItemColor: const Color.fromRGBO(255, 255, 255, 0.5),
             elevation: 0.0,
             currentIndex: _cIndex,
-            onTap: _incrementTab,
+            onTap: onTappedBar,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(
@@ -131,8 +145,17 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
               ),
             ],
           ),
-          body: _children[_cIndex],
-        ),
+          body: PageView(
+            physics: const NeverScrollableScrollPhysics(),
+            controller: pageController,
+            children: children,
+            onPageChanged: (page) {
+              setState(() {
+                _cIndex = page;
+              });
+            },
+          ),
+        )
       ],
     );
   }
@@ -149,7 +172,7 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
             color: const Color.fromRGBO(0, 0, 0, 0.4),
             child: const Padding(
               padding: EdgeInsets.all(5),
-              child: TemperatureChart(),
+              child: DataChart(),
             ),
           ),
         ),
@@ -158,7 +181,7 @@ class TemperAareState extends State<TemperAare> with WidgetsBindingObserver {
   }
 
   static Widget _info() {
-    String _markdownData = """# Über TemperAare
+    String markdownData = """# Über TemperAare
 
 Die Temperatur der Aare in Olten ist natürlich nicht massiv anders als in Solothurn oder Aarau, aber trotzdem habe ich mich immer daran gestört, dass der Bund in Olten keine [Hydrodaten-Messtation](https://www.hydrodaten.admin.ch/) an der Aare betreibt, sondern nur an der Dünnern.
 
@@ -171,33 +194,6 @@ Viel Spass beim Aareschwimmen!
 [Tobias Oetiker](mailto:tobi@oetiker.ch?subject=TemperAare)
 
 """;
-    TextTheme textTheme =
-        Typography.material2018(platform: TargetPlatform.android).black.merge(
-              const TextTheme(
-                bodyText2: TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.white,
-                  height: 1.2,
-                ),
-                bodyText1: TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.white,
-                ),
-                headline5: TextStyle(
-                  fontSize: 25.0,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                headline6: TextStyle(
-                  fontSize: 18.0,
-                  color: Colors.white,
-                ),
-                subtitle1: TextStyle(
-                  fontSize: 18.0,
-                  color: Colors.white,
-                ),
-              ),
-            );
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
       child: ClipRect(
@@ -213,14 +209,11 @@ Viel Spass beim Aareschwimmen!
               horizontal: 10,
             ),
             color: const Color.fromRGBO(0, 0, 0, 0.4),
-            child: Scrollbar(
-              child: Markdown(
-                  data: _markdownData,
-                  onTapLink: (text, url, title) {
-                    _launchURL(url!);
-                  },
-                  styleSheet: MarkdownStyleSheet.fromTheme(
-                      ThemeData.dark().copyWith(textTheme: textTheme))),
+            child: SingleChildScrollView(
+              child: Text(
+                markdownData,
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ),
@@ -229,14 +222,14 @@ Viel Spass beim Aareschwimmen!
   }
 
   Widget _tempCards() {
-    Future<bool> storeReady = TemperatureStore().updateStore();
+    Future<bool> storeReady = DataStore().updateStore();
     return FutureBuilder<bool>(
       future: storeReady,
       builder: (context, reading) {
         // print("temp card");
         SizeConfig().init(context);
         if (reading.hasData) {
-          TemperatureReading data = TemperatureStore().data.last;
+          var data = DataStore().data;
 
           final baseSize = min(SizeConfig.screenWidth, SizeConfig.screenHeight);
           final isHorizontal = SizeConfig.screenHeight < SizeConfig.screenWidth;
@@ -247,30 +240,26 @@ Viel Spass beim Aareschwimmen!
               right: 30,
               child: blurCircle(
                 width: baseSize / 2.3,
-                text: data.celsius2.toStringAsFixed(1) + ' °C',
-                subtitle: 'Luft',
+                text: "${data['airTempFaehrweg']?.last['v'].toStringAsFixed(1) ?? '?' } °C",
+                subtitle: 'Lufttemperatur',
                 backgroundColor: const Color.fromRGBO(119, 170, 252, 0.5),
               ),
             ),
             Positioned(
-                bottom: isHorizontal ? 10 : 60,
+                bottom: isHorizontal ? 120 : 250,
                 left: 30,
                 child: blurCircle(
-                  width: baseSize * 0.8 - 80,
-                  text: data.celsius1.toStringAsFixed(1) + ' °C',
-                  subtitle: 'Aare',
+                  width: baseSize * 0.6,
+                  text: "${data['waterTempFaehrweg']?.last['v'].toStringAsFixed(1) ?? '?'} °C",
+                  subtitle: 'Wassertemperatur',
                   backgroundColor: const Color.fromRGBO(31, 123, 129, 0.5),
                 )),
             Positioned(
               bottom: isHorizontal ? 10 : 10,
               right: 30,
               child: blurRect(
-                  text: intl.DateFormat("d.M.yyyy H:mm")
-                          .format(data.time.toLocal()) +
-                      ' / ' +
-                      data.volt.toStringAsFixed(2) +
-                      'V',
-                  width: baseSize * 0.4,
+                  text: '${intl.DateFormat("d.M.yyyy H:mm").format((data['batFaehrweg']?.last['t'] ?? DateTime.now()).toLocal())} / ${data['batFaehrweg']?.last['v'].toStringAsFixed(2)} V',
+                  width: baseSize * 0.3,
                   backgroundColor: const Color.fromRGBO(0, 0, 0, 0.3)),
             ),
           ]);
@@ -295,7 +284,7 @@ Viel Spass beim Aareschwimmen!
           //       );
           //     });
           return Center(
-            child: Text("${reading.error}"),
+            child: Text("Data Reading ${reading.error}"),
           );
         }
         return const Center(

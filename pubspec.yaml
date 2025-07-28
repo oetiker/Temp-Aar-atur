@@ -12,10 +12,10 @@ description: Live temperature trekking for the Aare in Olten
 # while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.6.3+15
+version: 1.7.0+16
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.17.0 <3.0.0'
 
 dependencies:
   flutter:
@@ -23,20 +23,19 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.4
-  http: '^0.13.4'
-  intl: ^0.17.0
-  flutter_launcher_icons: ^0.9.2
-  charts_flutter: ^0.12.0
-  flutter_markdown: ^0.6.8
-  url_launcher: ^6.0.17
-
+  cupertino_icons: ^1.0.5
+  http: ^1.4.0
+  intl: ^0.20.2
+  flutter_launcher_icons: ^0.14.4
+  
+  url_launcher: ^6.1.0
+  graphic: ^2.6.0
+  
 dev_dependencies:
-  flutter_lints: ^1.0.4
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
   
-
 flutter_icons:
   android: "launcher_icon"
   ios: true
