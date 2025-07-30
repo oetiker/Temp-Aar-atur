@@ -1,15 +1,18 @@
+import 'package:flutter/material.dart';
 /// Calculates nice numbers for [TimeDateNiceConv].
 Map<String, dynamic> linearNiceDates(
   DateTime min,
   DateTime max,
   num? width,
-  num? firstDayOfWeekIndex,
-) {
+  num? firstDayOfWeekIndex, {
+  TextStyle? textStyle,
+}) {
   return _rrdToolDates(
     min,
     max,
     width,
     firstDayOfWeekIndex,
+    textStyle,
   );
 }
 
@@ -229,7 +232,7 @@ enum GridCfg {
     fmt: "EEE HH:mm",
   ),
   g017(
-    minSec: 600,
+    minSec: 600.0,
     length: 0,
     gridIv: Iv.hour,
     gridSt: 6,
@@ -241,7 +244,7 @@ enum GridCfg {
     fmt: "EEE d MMM",
   ),
   g018(
-    minSec: 1200,
+    minSec: 1200.0,
     length: 0,
     gridIv: Iv.hour,
     gridSt: 6,
@@ -514,16 +517,42 @@ GridCfg _findBaseInterval(
 ) {
     var seconds = (max.millisecondsSinceEpoch - min.millisecondsSinceEpoch).toDouble() / 1e3;
     var factor = seconds / width.toDouble();
-    GridCfg selectedGridCfg = GridCfg.g000; // Default to the most granular
-
-    for (var gcfg in GridCfg.values) {
-      if (gcfg.minSec > factor) {
-        selectedGridCfg = gcfg;
-        break;
-      }
-      selectedGridCfg = gcfg; // Keep track of the last one if no break
+    
+    // Adjust for high-DPI displays: C code was designed for 72-96 DPI displays
+    // Modern displays are 200-400+ DPI, so we need to scale up the factor
+    // to select sparser configurations that won't overlap
+    factor *= 2.5; // Approximate scaling for 3x pixel density difference
+    
+    // First pass: find the configuration where next.minsec <= factor
+    int xlabSel = 0;
+    while (xlabSel + 1 < GridCfg.values.length && 
+           GridCfg.values[xlabSel + 1].minSec != -1.0 && 
+           GridCfg.values[xlabSel + 1].minSec <= factor) {
+        xlabSel++;
     }
-    return selectedGridCfg;
+    
+    // Second pass: if there are multiple configs with same minsec, 
+    // pick the smallest length that's > time span (or 0 if no length constraint)
+    final timeSpan = seconds;
+    while (xlabSel > 0 && 
+           GridCfg.values[xlabSel - 1].minSec == GridCfg.values[xlabSel].minSec &&
+           GridCfg.values[xlabSel].length > timeSpan) {
+        xlabSel--;
+    }
+    
+    return GridCfg.values[xlabSel];
+}
+
+
+/// Finds the best grid configuration - matches C implementation behavior
+GridCfg _findBestGridConfig(
+  DateTime min,
+  DateTime max,
+  num width,
+  TextStyle? textStyle,
+) {
+  // Just use the original algorithm like the C code - no overlap detection
+  return _findBaseInterval(min, max, width);
 }
 
 DateTime _findNextTime(
@@ -633,6 +662,7 @@ Map<String, dynamic> _rrdToolDates(
     DateTime max,
     num? width,
     num? firstDayOfWeekIndex,
+    TextStyle? textStyle,
 ) {
   final effectiveWidth = width ?? 400;
   final effectiveFirstDayOfWeek = firstDayOfWeekIndex?.toInt() ?? 1; // Monday
@@ -641,7 +671,7 @@ Map<String, dynamic> _rrdToolDates(
     return {'ticks': [], 'format': ""};
   }
 
-  final gridCfg = _findBaseInterval(min, max, effectiveWidth);
+  final gridCfg = _findBestGridConfig(min, max, effectiveWidth, textStyle);
 
   var currentTick = _findFirstTime(
     min,

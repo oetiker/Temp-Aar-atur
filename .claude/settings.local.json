@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter run -d chrome)",
+      "Bash(flutter analyze:*)",
+      "WebFetch(domain:medium.com)",
+      "Bash(flutter test:*)"
+    ],
+    "deny": []
+  }
+}

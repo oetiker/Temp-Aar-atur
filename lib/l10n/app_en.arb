@@ -1,0 +1,109 @@
+{
+  "@@locale": "en",
+  "appTitle": "Aare Temperature in Olten",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "currentTab": "Now",
+  "@currentTab": {
+    "description": "Label for current temperature tab"
+  },
+  "historyTab": "History",
+  "@historyTab": {
+    "description": "Label for historical chart tab"
+  },
+  "infoTab": "Info",
+  "@infoTab": {
+    "description": "Label for information tab"
+  },
+  "waterTemperature": "Aare",
+  "@waterTemperature": {
+    "description": "Label for water temperature display"
+  },
+  "airTemperature": "Air",
+  "@airTemperature": {
+    "description": "Label for air temperature display"
+  },
+  "loading": "Loading data...",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+  "noConnection": "No Internet Connection",
+  "@noConnection": {
+    "description": "Error message when offline"
+  },
+  "checkNetwork": "Please check your network connection",
+  "@checkNetwork": {
+    "description": "Error message instructing user to check network"
+  },
+  "retry": "Try Again",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  "dataLoadError": "Error loading data",
+  "@dataLoadError": {
+    "description": "Generic error message for data loading failures"
+  },
+  "tryAgainLater": "Please try again or wait a moment",
+  "@tryAgainLater": {
+    "description": "Error message suggesting user to try again later"
+  },
+  "unexpectedError": "An unexpected error occurred",
+  "@unexpectedError": {
+    "description": "Generic unexpected error message"
+  },
+  "appWillRestart": "The app will restart automatically.",
+  "@appWillRestart": {
+    "description": "Message shown when app will restart after error"
+  },
+  "restartApp": "Restart App",
+  "@restartApp": {
+    "description": "Button text to restart the app"
+  },
+  "errorDetails": "Error details:",
+  "@errorDetails": {
+    "description": "Label for error details section"
+  },
+  "lastMeasurementAndBattery": "Last measurement and battery voltage: {text}",
+  "@lastMeasurementAndBattery": {
+    "description": "Accessibility label for battery info widget",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "temperatureUpdate": "Temperature update: Water temperature {waterTemp} degrees Celsius, Air temperature {airTemp} degrees Celsius",
+  "@temperatureUpdate": {
+    "description": "Accessibility announcement for temperature updates",
+    "placeholders": {
+      "waterTemp": {
+        "type": "String"
+      },
+      "airTemp": {
+        "type": "String"
+      }
+    }
+  },
+  "temperatureChart": "{title} temperature chart: Shows temperature development over time. Touch to zoom and pan.",
+  "@temperatureChart": {
+    "description": "Accessibility label for temperature charts",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "noDataForPeriod": "No data available for the selected time period",
+  "@noDataForPeriod": {
+    "description": "Message shown when no chart data is available"
+  },
+  "aboutApp": "About TemperAare",
+  "@aboutApp": {
+    "description": "Title for the about section"
+  },
+  "aboutText": "The temperature of the Aare in Olten is naturally not massively different from Solothurn or Aarau, but I've always been bothered by the fact that the federal government doesn't operate a [hydrological data station](https://www.hydrodaten.admin.ch/) on the Aare in Olten, only on the Dünnern.\n\nI therefore built my own small temperature measuring station with two temperature sensors and deposited it on the banks of the Aare. One sensor measures the ambient temperature, the other lies about 40 cm below the water surface.\n\nThe measuring device works with a 3000 mAh Li-Ion battery. Thanks to sophisticated programming, it can measure temperatures every few minutes for many weeks and send the results to the server via LoRaWAN. The [app](https://github.com/oetiker/Temp-Aar-atur) gets its data directly from the server and prepares it locally for display.\n\nHave fun swimming in the Aare!\n\n[Tobias Oetiker](mailto:tobi@oetiker.ch?subject=TemperAare)",
+  "@aboutText": {
+    "description": "The full about text explaining the app and temperature station"
+  }
+}

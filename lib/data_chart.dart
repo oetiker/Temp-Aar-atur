@@ -1,14 +1,19 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:graphic/graphic.dart';
 import 'linear_nice_dates.dart';
-import 'data_store.dart';
 import 'size_config.dart';
+import 'services/service_locator.dart';
+import 'services/temperature_service.dart';
+import 'services/chart_data_manager.dart';
+import 'constants.dart';
+import 'l10n/app_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 class DataChart extends StatefulWidget {
-  const DataChart({Key? key}) : super(key: key);
+  final TemperatureService? temperatureService;
+  
+  const DataChart({super.key, this.temperatureService});
 
   @override
   State<DataChart> createState() => _DataChartState();
@@ -17,6 +22,13 @@ class DataChart extends StatefulWidget {
 class _DataChartState extends State<DataChart> {
   late DateTime _minTime;
   late DateTime _maxTime;
+  late TemperatureService _temperatureService;
+  late ChartDataManager _chartDataManager;
+  bool _isLoadingData = false;
+  
+  // Throttling for data loading during fast gestures
+  DateTime _lastDataLoadRequest = DateTime.fromMillisecondsSinceEpoch(0);
+  static const Duration _dataLoadThrottle = Duration(milliseconds: 300);
 
   final _gestureStream = StreamController<GestureEvent>.broadcast();
 
@@ -27,19 +39,68 @@ class _DataChartState extends State<DataChart> {
     length: 4,
   );
   static final _commonLabelStyle = LabelStyle(
-    textStyle: TextStyle(color: Colors.white),
-    offset: Offset(0, 10),
+    textStyle: const TextStyle(
+      color: Colors.white,
+      fontSize: AppConstants.chartLabelSize,
+    ),
+    offset: const Offset(0, 10),
   );
 
   @override
   void initState() {
     super.initState();
-    final data = DataStore().data;
-    _minTime = data['waterTempFaehrweg']?.first['t'] ?? DateTime.now();
-    _maxTime = data['waterTempFaehrweg']?.last['t'] ?? DateTime.now();
+    _temperatureService = widget.temperatureService ?? ServiceLocator().get<TemperatureService>();
+    _chartDataManager = ChartDataManager(_temperatureService);
+    _initializeTimeRange();
     _updateValueRange();
+    _loadInitialChartData();
 
     _gestureStream.stream.listen(_handleGesture);
+  }
+
+  void _loadInitialChartData() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingData = true;
+    });
+    
+    // Debug: Test range loading
+    // print('=== DEBUG: Testing range loading on chart init ===');
+    // await _chartDataManager.testRangeLoading();
+    
+    // Load data for initial chart view (last 7 days) with buffer
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+    
+    await _chartDataManager.ensureDataForChartView(weekAgo, now);
+    
+    // Update time range based on available data
+    _initializeTimeRange();
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingData = false;
+    });
+    
+    // Pre-load adjacent data for smooth navigation
+    _chartDataManager.preloadAdjacentData(_minTime, _maxTime);
+  }
+
+  void _initializeTimeRange() {
+    final data = _temperatureService.data;
+    final waterData = data['waterTempFaehrweg'];
+    
+    if (waterData != null && waterData.isNotEmpty) {
+      _minTime = waterData.first['t'] ?? DateTime.now();
+      _maxTime = waterData.last['t'] ?? DateTime.now();
+    } else {
+      // Default time range if no data is available yet
+      final now = DateTime.now();
+      _maxTime = now;
+      _minTime = now.subtract(const Duration(hours: 24));
+    }
   }
 
   void _updateValueRange() {
@@ -49,7 +110,7 @@ class _DataChartState extends State<DataChart> {
 
   Map<String, double> _getValueRangeForKey(String key) {
     // Calculate min/max values from visible data for specific key in current time window
-    final data = DataStore().data;
+    final data = _temperatureService.data;
     final keyData = data[key];
     double minVal = double.infinity;
     double maxVal = double.negativeInfinity;
@@ -80,14 +141,30 @@ class _DataChartState extends State<DataChart> {
     }
   }
 
-  DateTime get _dataMinTime {
-    final data = DataStore().data;
-    return data['waterTempFaehrweg']?.first['t'] ?? DateTime.now();
+  void refreshData() {
+    _initializeTimeRange();
+    setState(() {});
   }
 
-  DateTime get _dataMaxTime {
-    final data = DataStore().data;
-    return data['waterTempFaehrweg']?.last['t'] ?? DateTime.now();
+  void _loadDataForNavigation(DateTime previousMinTime, DateTime previousMaxTime) async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingData = true;
+    });
+    
+    await _chartDataManager.handleChartNavigation(
+      _minTime, 
+      _maxTime,
+      previousMinTime: previousMinTime,
+      previousMaxTime: previousMaxTime,
+    );
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingData = false;
+    });
   }
 
 
@@ -157,84 +234,199 @@ class _DataChartState extends State<DataChart> {
     super.dispose();
   }
 
+  Widget _buildChartHeader(String title, bool showTimestamp) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppConstants.chartLeftPadding,
+        right: AppConstants.chartRightPadding,
+        bottom: AppConstants.chartTitleSpacing,
+      ),
+      child: showTimestamp 
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: AppConstants.chartTitleSize,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                intl.DateFormat('yyyy-MM-dd HH:mm').format(_maxTime.toLocal()),
+                style: const TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: AppConstants.chartTimestampSize,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          )
+        : Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: AppConstants.chartTitleSize,
+                color: Colors.white,
+              ),
+            ),
+          ),
+    );
+  }
+
   void _handleGesture(GestureEvent event) {
     final gesture = event.gesture;
     
-    if (gesture.details != null) {
-      dynamic details = gesture.details;
+    if (gesture.details == null) return;
+    
+    dynamic details = gesture.details;
+    
+    // Handle ScaleUpdateDetails which contain focalPointDelta
+    if (details.runtimeType.toString() == 'ScaleUpdateDetails') {
+      _processScaleGesture(details);
+    }
+  }
+
+  void _processScaleGesture(dynamic details) {
+    try {
+      final delta = details.focalPointDelta as Offset;
+      if (delta.dx.abs() <= 0.1 && delta.dy.abs() <= 0.1) return; // Only process significant movements
       
-      // Handle ScaleUpdateDetails which contain focalPointDelta
-      if (details.runtimeType.toString() == 'ScaleUpdateDetails') {
-        try {
-          final delta = details.focalPointDelta as Offset;
-          if (delta.dx.abs() > 0.1 || delta.dy.abs() > 0.1) { // Only process significant movements
-            setState(() {
-              final timeSpan = _maxTime.millisecondsSinceEpoch - _minTime.millisecondsSinceEpoch;
-              
-              // Horizontal drag: pan time window (improved responsiveness)
-              if (delta.dx.abs() > delta.dy.abs()) {
-                // Primarily horizontal movement - pan
-                final timeOffset = -(delta.dx / SizeConfig.screenWidth) * timeSpan * 1.0;
-                var newMinTime = DateTime.fromMillisecondsSinceEpoch((_minTime.millisecondsSinceEpoch + timeOffset).round());
-                var newMaxTime = DateTime.fromMillisecondsSinceEpoch((_maxTime.millisecondsSinceEpoch + timeOffset).round());
-                
-                // Constrain panning to available data bounds
-                final dataMin = _dataMinTime;
-                final dataMax = _dataMaxTime;
-                final currentSpan = newMaxTime.millisecondsSinceEpoch - newMinTime.millisecondsSinceEpoch;
-                
-                if (newMinTime.isBefore(dataMin)) {
-                  newMinTime = dataMin;
-                  newMaxTime = DateTime.fromMillisecondsSinceEpoch(dataMin.millisecondsSinceEpoch + currentSpan);
-                }
-                if (newMaxTime.isAfter(dataMax)) {
-                  newMaxTime = dataMax;
-                  newMinTime = DateTime.fromMillisecondsSinceEpoch(dataMax.millisecondsSinceEpoch - currentSpan);
-                }
-                
-                _minTime = newMinTime;
-                _maxTime = newMaxTime;
-                _updateValueRange(); // Update value range after panning
-              } else {
-                // Primarily vertical movement - zoom
-                final zoomFactor = 1.0 - (delta.dy / SizeConfig.screenHeight) * 2.0; // Increased sensitivity
-                final newTimeSpan = (timeSpan * zoomFactor).clamp(
-                  Duration(minutes: 1).inMilliseconds.toDouble(), 
-                  Duration(days: 30).inMilliseconds.toDouble()
-                );
-                final timeCenter = (_minTime.millisecondsSinceEpoch + _maxTime.millisecondsSinceEpoch) / 2;
-                var newMinTime = DateTime.fromMillisecondsSinceEpoch((timeCenter - newTimeSpan / 2).round());
-                var newMaxTime = DateTime.fromMillisecondsSinceEpoch((timeCenter + newTimeSpan / 2).round());
-                
-                // Constrain zooming to available data bounds
-                final dataMin = _dataMinTime;
-                final dataMax = _dataMaxTime;
-                
-                if (newMinTime.isBefore(dataMin)) {
-                  newMinTime = dataMin;
-                }
-                if (newMaxTime.isAfter(dataMax)) {
-                  newMaxTime = dataMax;
-                }
-                
-                // Ensure we don't zoom out beyond the full data range
-                final maxSpan = dataMax.millisecondsSinceEpoch - dataMin.millisecondsSinceEpoch;
-                if (newMaxTime.millisecondsSinceEpoch - newMinTime.millisecondsSinceEpoch > maxSpan) {
-                  newMinTime = dataMin;
-                  newMaxTime = dataMax;
-                }
-                
-                _minTime = newMinTime;
-                _maxTime = newMaxTime;
-                _updateValueRange(); // Update value range after zooming
-              }
-            });
-          }
-        } catch (e) {
-          // Ignore errors
+      if (!mounted) return;
+      
+      setState(() {
+        final timeSpan = _maxTime.millisecondsSinceEpoch - _minTime.millisecondsSinceEpoch;
+        
+        if (delta.dx.abs() > delta.dy.abs()) {
+          _handlePanGesture(delta.dx, timeSpan.toDouble());
+        } else {
+          _handleZoomGesture(delta.dy, timeSpan.toDouble());
         }
+      });
+    } catch (e) {
+      // Log error instead of silently ignoring
+      debugPrint('Gesture handling error: $e');
+    }
+  }
+
+  void _handlePanGesture(double deltaX, double timeSpan) async {
+    // Store previous times for progressive loading
+    final previousMinTime = _minTime;
+    final previousMaxTime = _maxTime;
+    
+    // Debug: print('Pan DEBUG: deltaX=$deltaX, timeSpan=$timeSpan, currentRange=${_minTime} to ${_maxTime}');
+    
+    // Horizontal drag: pan time window
+    final timeOffset = -(deltaX / SizeConfig.screenWidth) * timeSpan * 1.0;
+    var newMinTime = DateTime.fromMillisecondsSinceEpoch((_minTime.millisecondsSinceEpoch + timeOffset).round());
+    var newMaxTime = DateTime.fromMillisecondsSinceEpoch((_maxTime.millisecondsSinceEpoch + timeOffset).round());
+    
+    // Debug: print('Pan DEBUG: timeOffset=$timeOffset, newRange=$newMinTime to $newMaxTime');
+    
+    // Constrain panning to available data bounds
+    final constrainedTimes = _constrainPanTimes(newMinTime, newMaxTime);
+    _minTime = constrainedTimes['min']!;
+    _maxTime = constrainedTimes['max']!;
+    
+    // Debug: print('Pan DEBUG: constrainedRange=${_minTime} to ${_maxTime}');
+    
+    // Load data progressively if needed (with throttling to prevent rapid requests)
+    final now = DateTime.now();
+    if (now.difference(_lastDataLoadRequest) > _dataLoadThrottle) {
+      // Debug: print('Pan: Checking if more data needed for ${_minTime} to ${_maxTime}');
+      if (_chartDataManager.needsMoreData(_minTime, _maxTime)) {
+        // Debug: print('Pan: Loading data for navigation');
+        _lastDataLoadRequest = now;
+        _loadDataForNavigation(previousMinTime, previousMaxTime);
+      } else {
+        // Debug: print('Pan: No additional data needed');
       }
     }
+    
+    _updateValueRange();
+  }
+
+  void _handleZoomGesture(double deltaY, double timeSpan) async {
+    // Store previous times for progressive loading
+    final previousMinTime = _minTime;
+    final previousMaxTime = _maxTime;
+    
+    // Vertical movement: zoom
+    final zoomFactor = 1.0 - (deltaY / SizeConfig.screenHeight) * 2.0;
+    final newTimeSpan = (timeSpan * zoomFactor).clamp(
+      Duration(minutes: 1).inMilliseconds.toDouble(), 
+      Duration(days: 365).inMilliseconds.toDouble() // Allow zooming out to full year
+    );
+    
+    final timeCenter = (_minTime.millisecondsSinceEpoch + _maxTime.millisecondsSinceEpoch) / 2;
+    var newMinTime = DateTime.fromMillisecondsSinceEpoch((timeCenter - newTimeSpan / 2).round());
+    var newMaxTime = DateTime.fromMillisecondsSinceEpoch((timeCenter + newTimeSpan / 2).round());
+    
+    // Constrain zooming to available data bounds
+    final constrainedTimes = _constrainZoomTimes(newMinTime, newMaxTime);
+    _minTime = constrainedTimes['min']!;
+    _maxTime = constrainedTimes['max']!;
+    
+    // Load data progressively if needed (with throttling to prevent rapid requests)
+    final now = DateTime.now();
+    if (now.difference(_lastDataLoadRequest) > _dataLoadThrottle) {
+      // Debug: print('Zoom: Checking if more data needed for ${_minTime} to ${_maxTime}');
+      if (_chartDataManager.needsMoreData(_minTime, _maxTime)) {
+        // Debug: print('Zoom: Loading data for navigation');
+        _lastDataLoadRequest = now;
+        _loadDataForNavigation(previousMinTime, previousMaxTime);
+      } else {
+        // Debug: print('Zoom: No additional data needed');
+      }
+    }
+    
+    _updateValueRange();
+  }
+  
+  Map<String, DateTime> _constrainPanTimes(DateTime newMinTime, DateTime newMaxTime) {
+    // Allow panning beyond loaded data to trigger progressive loading
+    // But never allow scrolling into the future - temperature data can't exist in the future
+    final earliestAllowed = DateTime(2020, 1, 1);
+    final latestAllowed = DateTime.now(); // No future data allowed
+    final currentSpan = newMaxTime.millisecondsSinceEpoch - newMinTime.millisecondsSinceEpoch;
+    
+    if (newMinTime.isBefore(earliestAllowed)) {
+      newMinTime = earliestAllowed;
+      newMaxTime = DateTime.fromMillisecondsSinceEpoch(earliestAllowed.millisecondsSinceEpoch + currentSpan);
+    }
+    if (newMaxTime.isAfter(latestAllowed)) {
+      newMaxTime = latestAllowed;
+      newMinTime = DateTime.fromMillisecondsSinceEpoch(latestAllowed.millisecondsSinceEpoch - currentSpan);
+    }
+    
+    return {'min': newMinTime, 'max': newMaxTime};
+  }
+  
+  Map<String, DateTime> _constrainZoomTimes(DateTime newMinTime, DateTime newMaxTime) {
+    // Allow zooming beyond loaded data to trigger progressive loading
+    // But never allow zooming into the future - temperature data can't exist in the future
+    final earliestAllowed = DateTime(2020, 1, 1);
+    final latestAllowed = DateTime.now(); // No future data allowed
+    
+    if (newMinTime.isBefore(earliestAllowed)) {
+      newMinTime = earliestAllowed;
+    }
+    if (newMaxTime.isAfter(latestAllowed)) {
+      newMaxTime = latestAllowed;
+    }
+    
+    // Allow reasonable zoom range (up to 5 years)
+    final maxSpan = const Duration(days: 365 * 5).inMilliseconds;
+    if (newMaxTime.millisecondsSinceEpoch - newMinTime.millisecondsSinceEpoch > maxSpan) {
+      final center = (newMinTime.millisecondsSinceEpoch + newMaxTime.millisecondsSinceEpoch) / 2;
+      newMinTime = DateTime.fromMillisecondsSinceEpoch((center - maxSpan / 2).round());
+      newMaxTime = DateTime.fromMillisecondsSinceEpoch((center + maxSpan / 2).round());
+    }
+    
+    return {'min': newMinTime, 'max': newMaxTime};
   }
 
 
@@ -258,7 +450,7 @@ class _DataChartState extends State<DataChart> {
           flex: 1,
           child: timeSeriesChart(
             'airTempFaehrweg',
-            title: 'Luft',
+            title: AppLocalizations.of(context)!.airTemperature.split(' ').first, // "Luft" from "Lufttemperatur"
             unit: 'C',
             color: const Color.fromARGB(255, 49, 125, 238),
           ),
@@ -267,7 +459,7 @@ class _DataChartState extends State<DataChart> {
           flex: 1,
           child: timeSeriesChart(
             'waterTempFaehrweg',
-            title: 'Aare',
+            title: AppLocalizations.of(context)!.waterTemperature.split(' ').first, // "Wasser" from "Wassertemperatur"
             color: Colors.greenAccent,
             unit: 'C',
           ),
@@ -293,12 +485,37 @@ class _DataChartState extends State<DataChart> {
     Color color = Colors.red,
   }) {
     SizeConfig().init(context);
-    final data = DataStore().data[key] ?? [];
-    final double fontSize =
-        (min(SizeConfig.screenWidth, SizeConfig.screenHeight) / 40);
+    final rawData = _temperatureService.data[key] ?? [];
+    
+    // Sort data by time and filter for current time window to prevent connecting lines
+    final data = rawData
+        .where((point) {
+          final pointTime = point['t'] as DateTime;
+          return pointTime.isAfter(_minTime.subtract(const Duration(minutes: 1))) && 
+                 pointTime.isBefore(_maxTime.add(const Duration(minutes: 1)));
+        })
+        .toList()
+        ..sort((a, b) => (a['t'] as DateTime).compareTo(b['t'] as DateTime));
+    
+    // If no data in the current time window, return a placeholder
+    if (data.isEmpty) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.noDataForPeriod,
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+      );
+    }
+    
     final double width = SizeConfig.screenWidth;
-    final niceDateData = linearNiceDates(_minTime, _maxTime, width, 1);
-    final niceDateTicks = niceDateData['ticks'];
+    
+    // Create text style that matches what the chart will use for labels
+    const labelTextStyle = TextStyle(
+      color: Colors.white,
+      fontSize: AppConstants.chartLabelSize,
+    );
+    
+    final niceDateData = linearNiceDates(_minTime, _maxTime, width, 1, textStyle: labelTextStyle);
     final majorDateTicks = niceDateData['majorTicks'] ?? [];
     final minorDateTicks = niceDateData['minorTicks'] ?? [];
     final dateFormat = niceDateData['format'];
@@ -315,19 +532,21 @@ class _DataChartState extends State<DataChart> {
     return Column(children: <Widget>[
       Container(
         padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-        child: Text(
-          title,
-          style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: fontSize,
-              color: Colors.white),
-        ),
+        child: _buildChartHeader(title, key == 'airTempFaehrweg'),
       ),
       Flexible(
-          flex: 1,
-          child: Chart(
+        flex: 1,
+        child: Stack(
+          children: [
+            Semantics(
+              label: AppLocalizations.of(context)!.temperatureChart(title),
+              child: Chart(
             data: data,
-            padding: (size) => const EdgeInsets.only(left: 70, bottom: 40),
+            padding: (size) => const EdgeInsets.only(
+              left: AppConstants.chartLeftPadding, 
+              right: AppConstants.chartRightPadding,
+              bottom: 40,
+            ),
             variables: {
               'time': Variable(
                 accessor: (dynamic map) =>
@@ -420,7 +639,10 @@ class _DataChartState extends State<DataChart> {
                 line: _commonLineStyle,
                 tickLine: _commonTickLineStyle,
                 label: LabelStyle(
-                  textStyle: const TextStyle(color: Colors.white),
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: AppConstants.chartLabelSize,
+                  ),
                   offset: const Offset(-10, 0),
                 ),
                 // Major grid lines for temperature - more prominent
@@ -450,7 +672,22 @@ class _DataChartState extends State<DataChart> {
             ),
             crosshair: CrosshairGuide(followPointer: [true, false]),
             gestureStream: _gestureStream,
-          ))
+          ),
+        ),
+            // Loading indicator overlay
+            if (_isLoadingData)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      )
     ]);
   }
 
