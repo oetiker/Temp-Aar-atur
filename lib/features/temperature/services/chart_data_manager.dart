@@ -12,15 +12,15 @@ class ChartDataManager {
   
   /// Ensure data is available for the chart's current view with buffers for navigation
   Future<bool> ensureDataForChartView(DateTime minTime, DateTime maxTime) async {
-    // Debug: print('ensureDataForChartView: $minTime to $maxTime');
+    // Debug:  debugPrint'ensureDataForChartView: $minTime to $maxTime');
     
     // Check if we already have data for this range
-    if (_temperatureService.hasDataForTimeRange(minTime, maxTime)) {
-      // Debug: print('Data already available for range');
+    if (_temperatureService.hasData(minTime, maxTime)) {
+      // Debug:  debugPrint'Data already available for range');
       return true;
     }
     
-    // Debug: print('Loading new data for range');
+    // Debug:  debugPrint'Loading new data for range');
     
     // Calculate buffer based on the current time span
     final timeSpan = maxTime.difference(minTime);
@@ -34,13 +34,13 @@ class ChartDataManager {
       buffer = const Duration(days: 2); // Larger buffer for long-term views
     }
     
-    final result = await _temperatureService.loadDataForTimeRange(
+    final result = await _temperatureService.load(
       minTime, 
       maxTime, 
       buffer: buffer,
     );
     
-    // Debug: print('Data loading result: $result');
+    // Debug:  debugPrint'Data loading result: $result');
     return result;
   }
   
@@ -62,7 +62,7 @@ class ChartDataManager {
     
     // If it's a small pan (less than 50% of view), use smaller buffer
     if (minDelta.abs() < viewSpan * 0.5 && maxDelta.abs() < viewSpan * 0.5) {
-      return await _temperatureService.loadDataForTimeRange(
+      return await _temperatureService.load(
         newMinTime,
         newMaxTime,
         buffer: _panBuffer,
@@ -78,13 +78,13 @@ class ChartDataManager {
     final viewSpan = maxTime.difference(minTime);
     
     // Pre-load data before and after current view (fire and forget)
-    _temperatureService.loadDataForTimeRange(
+    _temperatureService.load(
       minTime.subtract(viewSpan),
       minTime,
       buffer: const Duration(hours: 1),
     ).ignore(); // Don't wait for completion
     
-    _temperatureService.loadDataForTimeRange(
+    _temperatureService.load(
       maxTime,
       maxTime.add(viewSpan),
       buffer: const Duration(hours: 1),
@@ -96,18 +96,18 @@ class ChartDataManager {
     final now = DateTime.now();
     final twoWeeksAgo = now.subtract(const Duration(days: 14));
     
-    // Debug: print('=== Testing Range Loading ===');
-    // Debug: print('Requesting data from $twoWeeksAgo to $now');
+    // Debug:  debugPrint'=== Testing Range Loading ===');
+    // Debug:  debugPrint'Requesting data from $twoWeeksAgo to $now');
     
-    await _temperatureService.loadDataForTimeRange(
+    await _temperatureService.load(
       twoWeeksAgo,
       now,
       buffer: const Duration(hours: 1),
     );
     
-    // Debug: print('Range loading result: $result');
-    // Debug: print('Loaded ranges: ${_temperatureService.loadedRanges}');
-    // Debug: print('=== End Test ===');
+    // Debug:  debugPrint'Range loading result: $result');
+    // Debug:  debugPrint'Loaded ranges: ${_temperatureService.loadedRanges}');
+    // Debug:  debugPrint'=== End Test ===');
   }
 
   /// Get loading progress for UI feedback
@@ -140,7 +140,7 @@ class ChartDataManager {
       end: maxTime.add(safetyMargin),
     );
     
-    final hasData = _temperatureService.hasDataForTimeRange(
+    final hasData = _temperatureService.hasData(
       expandedRange.start,
       expandedRange.end,
     );
@@ -148,9 +148,9 @@ class ChartDataManager {
     final needsData = !hasData;
     
     // Debug logging with more detail
-    // Debug: print('needsMoreData: $needsData for range ${expandedRange.start} to ${expandedRange.end}');
-    // Debug: print('Current loaded ranges: ${_temperatureService.loadedRanges}');
-    // Debug: print('hasDataForTimeRange returned: $hasData');
+    // Debug:  debugPrint'needsMoreData: $needsData for range ${expandedRange.start} to ${expandedRange.end}');
+    // Debug:  debugPrint'Current loaded ranges: ${_temperatureService.loadedRanges}');
+    // Debug:  debugPrint'hasDataForTimeRange returned: $hasData');
     
     return needsData;
   }

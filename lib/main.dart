@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'error_boundary.dart';
+import 'core/widgets/error_boundary.dart';
 import 'l10n/app_localizations.dart';
-import 'screens/home_screen.dart';
-import 'services/service_locator.dart';
-
+import 'features/temperature/screens/home_screen.dart';
 void main() {
-  ServiceLocator.setupDependencies();
   runApp(
     ErrorBoundary(
       child: const TemperAareApp(),

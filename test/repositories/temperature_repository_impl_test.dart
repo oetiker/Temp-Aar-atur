@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:temp_aar_ature/repositories/temperature_repository_impl.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_repository_impl.dart';
 
 // Note: These are integration-style tests that would benefit from HTTP mocking
 // For now, they test the logic but may make actual HTTP calls

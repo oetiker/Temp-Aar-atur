@@ -1,14 +1,19 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'temperature_repository.dart';
 import '../models/data_loading_level.dart';
+import '../../../core/exceptions/temperature_exceptions.dart';
 
 class TemperatureRepositoryImpl implements TemperatureRepository {
   static final Map<String, List<Map<String, dynamic>>> _dataReadings = {};
   static final List<DataRange> _loadedRanges = [];
   static final Map<String, Future<bool>> _inflightRequests = {}; // Track in-flight requests
+  static final List<DataRange> _requestQueue = []; // Queue for sequential processing
+  static bool _processingQueue = false;
+  static Function()? _onDataUpdated; // Callback for when data is updated
   
   @override
   Map<String, List<Map<String, dynamic>>> get data => _dataReadings;
@@ -48,45 +53,104 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
       return true; // Already have all the data
     }
     
-    // Fetch each missing range with deduplication, expanding small ranges to minimum 1 day
+    // Break down large ranges and add to queue for sequential processing
     for (final missingRange in missingRanges) {
-      // Expand small ranges to at least 1 day to avoid tiny requests
       final expandedRange = _expandToMinimumDuration(missingRange);
-      final requestKey = '${expandedRange.startEpoch}-${expandedRange.endEpoch}';
+      final chunks = _splitIntoSevenDayChunks(expandedRange);
       
-      // Check if this request is already in flight
-      if (_inflightRequests.containsKey(requestKey)) {
-        // Debug: print('Request deduplication: Waiting for existing request $requestKey');
-        final success = await _inflightRequests[requestKey]!;
-        if (!success) {
-          return false;
+      // Add chunks to queue
+      for (final chunk in chunks) {
+        if (!_isRangeInQueueOrProcessing(chunk)) {
+          _requestQueue.add(chunk);
+          debugPrint('[TemperatureRepositoryImpl] Added range to queue: ${chunk.start} to ${chunk.end}');
         }
-        continue;
       }
+    }
+    
+    // Start processing queue if not already running
+    _startQueueProcessing(maxRetries);
+    
+    // Wait for our ranges to be processed
+    return await _waitForRangeCompletion(range);
+  }
+
+  List<DataRange> _splitIntoSevenDayChunks(DataRange range) {
+    const maxDays = 7;
+    final chunks = <DataRange>[];
+    
+    DateTime currentStart = range.start;
+    while (currentStart.isBefore(range.end)) {
+      final currentEnd = currentStart.add(const Duration(days: maxDays));
+      final chunkEnd = currentEnd.isAfter(range.end) ? range.end : currentEnd;
       
-      // Start new request and track it
-      // Debug: print('Starting new request for range: $requestKey (expanded from ${missingRange.startEpoch}-${missingRange.endEpoch})');
+      chunks.add(DataRange(start: currentStart, end: chunkEnd));
+      currentStart = chunkEnd;
+    }
+    
+    // Reverse chunks to process newest data first (users typically pan backwards in time)
+    final reversedChunks = chunks.reversed.toList();
+    debugPrint('[TemperatureRepositoryImpl] Split range into ${chunks.length} chunks of max 7 days each (reversed for newest-first processing)');
+    return reversedChunks;
+  }
+
+  bool _isRangeInQueueOrProcessing(DataRange range) {
+    final requestKey = '${range.startEpoch}-${range.endEpoch}';
+    
+    // Check if already in queue
+    if (_requestQueue.any((r) => r.startEpoch == range.startEpoch && r.endEpoch == range.endEpoch)) {
+      return true;
+    }
+    
+    // Check if already in flight
+    if (_inflightRequests.containsKey(requestKey)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  void _startQueueProcessing(int maxRetries) async {
+    if (_processingQueue) return;
+    
+    _processingQueue = true;
+    debugPrint('[TemperatureRepositoryImpl] Starting sequential queue processing');
+    
+    while (_requestQueue.isNotEmpty) {
+      final range = _requestQueue.removeAt(0);
+      final requestKey = '${range.startEpoch}-${range.endEpoch}';
+      
+      debugPrint('[TemperatureRepositoryImpl] Processing queued range: ${range.start} to ${range.end}');
+      
       final requestFuture = _fetchWithStartEndParameters(
-        expandedRange.startEpoch, 
-        expandedRange.endEpoch, 
+        range.startEpoch, 
+        range.endEpoch, 
         maxRetries: maxRetries
       ).then((success) {
-        // Remove from in-flight requests when complete
         _inflightRequests.remove(requestKey);
         if (success) {
-          _addLoadedRange(expandedRange); // Add the expanded range, not the original small one
+          _addLoadedRange(range);
         }
         return success;
       });
       
       _inflightRequests[requestKey] = requestFuture;
-      final success = await requestFuture;
+      await requestFuture; // Wait for completion before processing next
+    }
+    
+    _processingQueue = false;
+    debugPrint('[TemperatureRepositoryImpl] Queue processing completed');
+  }
+
+  Future<bool> _waitForRangeCompletion(DataRange range) async {
+    // Poll until our range is fully loaded
+    while (!hasDataForRange(range)) {
+      await Future.delayed(const Duration(milliseconds: 100));
       
-      if (!success) {
+      // Check if processing failed (no more queue items and not processing)
+      if (!_processingQueue && _requestQueue.isEmpty && !hasDataForRange(range)) {
         return false;
       }
     }
-    
     return true;
   }
   
@@ -97,9 +161,6 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
   
   @override
   List<DataRange> getMissingRanges(DataRange requestedRange) {
-    // Debug: print('getMissingRanges: Requested ${requestedRange.start} to ${requestedRange.end}');
-    // Debug: print('In-flight requests: ${_inflightRequests.keys.toList()}');
-    
     // Combine loaded ranges with in-flight request ranges
     final allRanges = <DataRange>[];
     allRanges.addAll(_loadedRanges);
@@ -140,8 +201,8 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
         missing.add(DataRange(start: currentStart, end: gapEnd));
       }
       
-      // Move past this loaded range
-      if (loadedRange.end.isAfter(currentStart)) {
+      // Only move past this loaded range if it actually overlaps with our current position
+      if (loadedRange.end.isAfter(currentStart) && loadedRange.start.isBefore(requestedRange.end)) {
         currentStart = loadedRange.end;
       }
       
@@ -157,7 +218,6 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
       missing.add(DataRange(start: currentStart, end: requestedRange.end));
     }
     
-    // Debug: print('getMissingRanges: Missing ranges calculated: ${missing.map((r) => '${r.start} to ${r.end}').toList()}');
     return missing;
   }
   
@@ -249,9 +309,10 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
   
   Future<bool> _fetchWithLastParameter(int intervalSeconds, {int maxRetries = 3}) async {
     int now = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
-    
+
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
+        debugPrint('[TemperatureRepositoryImpl] Fetching latest data (interval: $intervalSeconds s, attempt: $attempt)');
         final response = await http.get(
           Uri.parse(
               'https://temperaare.ch/REST/v1/fetch/waterTempFaehrweg,airTempFaehrweg,batFaehrweg?last=${intervalSeconds}s'),
@@ -260,25 +321,37 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
             HttpHeaders.authorizationHeader: 'as8jkhaksdlfhahjsfdf'
           },
         ).timeout(const Duration(seconds: 100));
-        
-        switch (response.statusCode) {
-          case 200:
+
+        debugPrint('[TemperatureRepositoryImpl] Response status: ${response.statusCode}');
+        if (response.statusCode != 200 && response.statusCode != 204) {
+          debugPrint('[TemperatureRepositoryImpl] Response body: ${response.body}');
+        }
+
+      switch (response.statusCode) {
+        case 200:
+          try {
             _processResponseData(json.decode(response.body));
             _isOffline = false;
-            continue ok;
-          ok:
-          case 204: // no content
             _lastLatestCall = now;
-            _isOffline = false;
             return true;
-          default:
-            if (attempt == maxRetries - 1) {
-              _isOffline = true;
-              return false;
-            }
-            break;
-        }
+          } catch (e, stack) {
+            debugPrint('[TemperatureRepositoryImpl] Exception in _processResponseData: $e\n$stack');
+            rethrow;
+          }
+        case 204: // no content
+          _lastLatestCall = now;
+          _isOffline = false;
+          return true;
+        case 401:
+          throw TemperatureAuthException();
+        case 404:
+          throw TemperatureNotFoundException();
+        default:
+          throw TemperatureApiException(
+              'Unexpected status: ${response.statusCode}');
+      }
       } catch (e) {
+        debugPrint('[TemperatureRepositoryImpl] Exception during fetch: $e');
         if (attempt == maxRetries - 1) {
           _isOffline = true;
           return false;
@@ -286,7 +359,7 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
         await Future.delayed(Duration(seconds: (attempt + 1) * 2));
       }
     }
-    
+
     _isOffline = true;
     return false;
   }
@@ -301,9 +374,10 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
       // If start is in future, no valid data range exists
       return false;
     }
-    
+
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
+        debugPrint('[TemperatureRepositoryImpl] Fetching data for range $startEpoch-$endEpoch (attempt: $attempt)');
         final response = await http.get(
           Uri.parse(
               'https://temperaare.ch/REST/v1/fetch/waterTempFaehrweg,airTempFaehrweg,batFaehrweg?range=$startEpoch-$endEpoch'),
@@ -312,7 +386,12 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
             HttpHeaders.authorizationHeader: 'as8jkhaksdlfhahjsfdf'
           },
         ).timeout(const Duration(seconds: 10));
-        
+
+        debugPrint('[TemperatureRepositoryImpl] Response status: ${response.statusCode}');
+        if (response.statusCode != 200 && response.statusCode != 204) {
+          debugPrint('[TemperatureRepositoryImpl] Response body: ${response.body}');
+        }
+
         switch (response.statusCode) {
           case 200:
             _processResponseData(json.decode(response.body));
@@ -322,6 +401,7 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
             _isOffline = false;
             return true;
           default:
+            debugPrint('[TemperatureRepositoryImpl] Unexpected status code: ${response.statusCode}');
             if (attempt == maxRetries - 1) {
               _isOffline = true;
               return false;
@@ -329,6 +409,7 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
             break;
         }
       } catch (e) {
+        debugPrint('[TemperatureRepositoryImpl] Exception during fetch: $e');
         if (attempt == maxRetries - 1) {
           _isOffline = true;
           return false;
@@ -336,12 +417,14 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
         await Future.delayed(Duration(seconds: (attempt + 1) * 2));
       }
     }
-    
+
     _isOffline = true;
     return false;
   }
   
   void _processResponseData(Map<String, dynamic> responseData) {
+    bool dataAdded = false;
+    
     for (String key in responseData.keys) {
       if (!_dataReadings.containsKey(key)) {
         _dataReadings[key] = [];
@@ -360,11 +443,28 @@ class TemperatureRepositoryImpl implements TemperatureRepository {
             't': dateTime,
             'v': value,
           });
+          dataAdded = true;
         }
       }
       
       // Keep data sorted by time
       existingData.sort((a, b) => (a['t'] as DateTime).compareTo(b['t'] as DateTime));
     }
+    
+    // Notify listeners that data was updated
+    if (dataAdded && _onDataUpdated != null) {
+      debugPrint('[TemperatureRepositoryImpl] Notifying data updated callback');
+      _onDataUpdated!();
+    }
+  }
+
+  /// Set callback to be notified when data is updated
+  static void setDataUpdatedCallback(Function() callback) {
+    _onDataUpdated = callback;
+  }
+
+  /// Clear the data updated callback
+  static void clearDataUpdatedCallback() {
+    _onDataUpdated = null;
   }
 }

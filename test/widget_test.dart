@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:temp_aar_ature/screens/home_screen.dart';
-import 'package:temp_aar_ature/services/service_locator.dart';
-import 'package:temp_aar_ature/repositories/temperature_repository.dart';
+import 'package:temp_aar_ature/features/temperature/screens/home_screen.dart';
+import 'package:temp_aar_ature/core/services/service_locator.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_repository.dart';
 import 'mocks/mock_temperature_repository.dart';
 
 void main() {

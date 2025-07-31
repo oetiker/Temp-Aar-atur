@@ -1,4 +1,5 @@
-/// Represents a time range for data loading
+/// Represents a time range for progressive data loading strategy.
+/// Prevents memory issues with large datasets by loading only visible chart regions.
 class DataRange {
   final DateTime start;
   final DateTime end;

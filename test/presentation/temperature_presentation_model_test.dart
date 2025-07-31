@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:temp_aar_ature/presentation/temperature_presentation_model.dart';
-import 'package:temp_aar_ature/services/temperature_service.dart';
-import 'package:temp_aar_ature/services/service_locator.dart';
-import 'package:temp_aar_ature/repositories/temperature_repository.dart';
+import 'package:temp_aar_ature/features/temperature/models/temperature_presentation_model.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_service.dart';
+import 'package:temp_aar_ature/core/services/service_locator.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_repository.dart';
 import '../mocks/mock_temperature_repository.dart';
 
 void main() {

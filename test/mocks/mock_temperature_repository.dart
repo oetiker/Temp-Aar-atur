@@ -1,5 +1,5 @@
-import 'package:temp_aar_ature/repositories/temperature_repository.dart';
-import 'package:temp_aar_ature/models/data_loading_level.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_repository.dart';
+import 'package:temp_aar_ature/features/temperature/models/data_loading_level.dart';
 
 class MockTemperatureRepository implements TemperatureRepository {
   Map<String, List<Map<String, dynamic>>> _mockData = {};
@@ -19,22 +19,26 @@ class MockTemperatureRepository implements TemperatureRepository {
   List<DataRange> get loadedRanges => _loadedRanges;
 
   @override
-  Future<bool> updateLatestData({int maxRetries = 3}) async {
+  Future<void> updateLatestData({int maxRetries = 3}) async {
     _updateDataCallCount++;
     _lastMaxRetries = maxRetries;
-    return _updateResult;
+    if (!_updateResult) {
+      throw Exception('Mock update failed');
+    }
   }
 
   @override
-  Future<bool> updateData({int maxRetries = 3}) async {
+  Future<void> updateData({int maxRetries = 3}) async {
     return await updateLatestData(maxRetries: maxRetries);
   }
 
   @override
-  Future<bool> loadDataForRange(DataRange range, {int maxRetries = 3}) async {
+  Future<void> loadDataForRange(DataRange range, {int maxRetries = 3}) async {
     _updateDataCallCount++;
     _lastMaxRetries = maxRetries;
-    return _updateResult;
+    if (!_updateResult) {
+      throw Exception('Mock load failed');
+    }
   }
 
   @override

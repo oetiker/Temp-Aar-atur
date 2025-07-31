@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/temperature_cards_widget.dart';
-import '../widgets/info_tab_widget.dart';
-import '../widgets/background_widget.dart';
+import '../services/temperature_service.dart';
+import '../../info/widgets/info_tab_widget.dart';
+import '../../../core/widgets/background_widget.dart';
 import '../widgets/chart_wrapper_widget.dart';
-import '../l10n/app_localizations.dart';
+import '../../../l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,7 +15,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  final pageIndexNotifier = ValueNotifier<int>(0);
   final tenMinutes = const Duration(seconds: 700);
 
   int _cIndex = 0;
@@ -58,40 +58,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _cIndex = value;
     });
-    pageController.animateToPage(
-      value,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.elasticOut,
-    );
   }
 
-  late final PageController pageController = PageController();
+  late final TemperatureService _temperatureService = TemperatureService();
 
   @override
   Widget build(BuildContext context) {
     _startPeriodicRefresh();
-    
+
     const Color barColor = Color.fromRGBO(31, 123, 129, 0.7);
-    
+
     final List<Widget> screens = [
-      const TemperatureCardsWidget(),
-      const ChartWrapperWidget(),
+      TemperatureCardsWidget(temperatureService: _temperatureService),
+      ChartWrapperWidget(temperatureService: _temperatureService),
       const InfoTabWidget(),
     ];
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.appTitle),
+        title: Text(AppLocalizations.of(context)!.appTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Stack(
         children: [
           const BackgroundWidget(),
-          PageView(
-            controller: pageController,
-            children: screens,
+          SafeArea(
+            child: IndexedStack(
+              index: _cIndex,
+              children: screens,
+            ),
           ),
         ],
       ),

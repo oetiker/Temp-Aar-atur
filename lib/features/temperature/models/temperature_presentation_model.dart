@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/temperature_service.dart';
-import '../size_config.dart';
-import '../l10n/app_localizations.dart';
+import '../../../core/utils/size_config.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 class TemperaturePresentationModel {
@@ -14,12 +14,12 @@ class TemperaturePresentationModel {
   
   String get currentWaterTemperatureText {
     final temp = _temperatureService.currentWaterTemperature;
-    return temp != null ? "${temp.toStringAsFixed(1)} °C" : "? °C";
+    return temp != null ? "${temp.toStringAsFixed(1)} °C" : "? °C";
   }
   
   String get currentAirTemperatureText {
     final temp = _temperatureService.currentAirTemperature;
-    return temp != null ? "${temp.toStringAsFixed(1)} °C" : "? °C";
+    return temp != null ? "${temp.toStringAsFixed(1)} °C" : "? °C";
   }
   
   String get batteryInfoText {
@@ -69,6 +69,6 @@ class TemperaturePresentationModel {
   }
   
   Future<bool> updateTemperatureData() {
-    return _temperatureService.updateTemperatureData();
+    return _temperatureService.update();
   }
 }

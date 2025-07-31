@@ -1,33 +1,55 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
-import '../size_config.dart';
-import '../services/service_locator.dart';
+import '../../../core/utils/size_config.dart';
 import '../services/temperature_service.dart';
-import '../l10n/app_localizations.dart';
-import '../widgets/blur_shapes.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../core/widgets/blur_shapes.dart';
 
-/// Widget that displays the current temperature cards with air, water, and battery info
+/// Displays live temperature readings in overlaid circles for immediate visual recognition.
+/// Uses semantic layouts optimized for one-handed mobile use with large touch targets.
 class TemperatureCardsWidget extends StatelessWidget {
-  const TemperatureCardsWidget({super.key});
+  final TemperatureService temperatureService;
+  
+  const TemperatureCardsWidget({
+    super.key,
+    required this.temperatureService,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final temperatureService = ServiceLocator().get<TemperatureService>();
-    
+    debugPrint('[TemperatureCardsWidget] build called');
     return FutureBuilder<bool>(
-      future: temperatureService.updateLatestData(),
+      future: temperatureService.update(),
       builder: (context, snapshot) {
         SizeConfig().init(context);
-        
+
+        debugPrint('[TemperatureCardsWidget] FutureBuilder state: ${snapshot.connectionState}');
         if (snapshot.connectionState == ConnectionState.done) {
           if (snapshot.hasError) {
+            debugPrint('[TemperatureCardsWidget] Error: ${snapshot.error}');
             return _buildErrorState(context, snapshot);
           }
-          
-          return _buildTemperatureCards(context, temperatureService);
+          try {
+            debugPrint('[TemperatureCardsWidget] Rendering temperature cards');
+            return _buildTemperatureCards(context, temperatureService);
+          } catch (e, stack) {
+            debugPrint('[TemperatureCardsWidget] Exception in _buildTemperatureCards: $e\n$stack');
+            return Center(
+              child: Text(
+                'Widget error: $e',
+                style: const TextStyle(color: Colors.red, fontSize: 18),
+              ),
+            );
+          }
         }
-        
+
+        if (snapshot.hasError) {
+          debugPrint('[TemperatureCardsWidget] Error (loading): ${snapshot.error}');
+          return _buildErrorState(context, snapshot);
+        }
+
+        debugPrint('[TemperatureCardsWidget] Loading state');
         return _buildLoadingState(context);
       },
     );
@@ -35,19 +57,10 @@ class TemperatureCardsWidget extends StatelessWidget {
 
   Widget _buildErrorState(BuildContext context, AsyncSnapshot<bool> snapshot) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            AppLocalizations.of(context)!.dataLoadError,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${AppLocalizations.of(context)!.errorDetails} ${snapshot.error}',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
+      child: Text(
+        'Error loading temperature data:\n${snapshot.error}',
+        style: const TextStyle(color: Colors.red, fontSize: 18),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -70,7 +83,7 @@ class TemperatureCardsWidget extends StatelessWidget {
             ),
             child: BlurShapes.circle(
               width: baseSize / 2.3,
-              text: "${data['airTempFaehrweg']?.last['v']?.toStringAsFixed(1) ?? '?'} °C",
+              text: "${data['airTempFaehrweg']?.last['v']?.toStringAsFixed(1) ?? '?'} °C",
               subtitle: AppLocalizations.of(context)!.airTemperature,
               backgroundColor: const Color.fromRGBO(119, 170, 252, 0.5),
             ),
@@ -83,7 +96,7 @@ class TemperatureCardsWidget extends StatelessWidget {
           left: 30,
           child: BlurShapes.circle(
             width: baseSize * (isHorizontal ? 0.6 : 0.8),
-            text: "${data['waterTempFaehrweg']?.last['v']?.toStringAsFixed(1) ?? '?'} °C",
+            text: "${data['waterTempFaehrweg']?.last['v']?.toStringAsFixed(1) ?? '?'} °C",
             subtitle: AppLocalizations.of(context)!.waterTemperature,
             backgroundColor: const Color.fromRGBO(31, 123, 129, 0.502),
           ),
@@ -91,7 +104,7 @@ class TemperatureCardsWidget extends StatelessWidget {
         
         // Battery info rectangle (bottom right)
         Positioned(
-          bottom: 80,
+          bottom: 30,
           right: 30,
           child: Semantics(
             label: AppLocalizations.of(context)!.lastMeasurementAndBattery(
@@ -109,21 +122,8 @@ class TemperatureCardsWidget extends StatelessWidget {
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(
-            backgroundColor: Colors.transparent,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            AppLocalizations.of(context)!.loading,
-            style: const TextStyle(color: Colors.white),
-          ),
-        ],
-      ),
+    return const Center(
+      child: CircularProgressIndicator(),
     );
   }
 

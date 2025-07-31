@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'dart:ui' show PlatformDispatcher;
+import '../constants/ui_constants.dart';
 
 class ErrorBoundary extends StatefulWidget {
   final Widget child;
@@ -54,29 +55,29 @@ class ErrorBoundaryState extends State<ErrorBoundary> {
   Widget _buildDefaultErrorWidget(FlutterErrorDetails errorDetails) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: const Color.fromRGBO(31, 123, 129, 1),
+        backgroundColor: UiConstants.primaryTeal,
         body: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(UiConstants.defaultPadding),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
                 Icons.error_outline,
                 color: Colors.white,
-                size: 64,
+                size: UiConstants.largeErrorIconSize,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: UiConstants.largePadding),
               const Text(
                 'Ein unerwarteter Fehler ist aufgetreten',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: UiConstants.largeErrorTitleSize,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: UiConstants.smallPadding),
               const Text(
                 'Die App wird automatisch neu gestartet.',
                 style: TextStyle(

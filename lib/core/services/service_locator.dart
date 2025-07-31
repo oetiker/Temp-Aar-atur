@@ -1,6 +1,6 @@
-import '../repositories/temperature_repository.dart';
-import '../repositories/temperature_repository_impl.dart';
-import 'temperature_service.dart';
+import '../../features/temperature/services/temperature_repository.dart';
+import '../../features/temperature/services/temperature_repository_impl.dart';
+import '../../features/temperature/services/temperature_service.dart';
 
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();

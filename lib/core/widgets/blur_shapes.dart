@@ -42,9 +42,9 @@ class BlurShapes {
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.normal,
-                    fontSize: 25,
+                    fontSize: width * 0.08,
                     color: Colors.white,
                   ),
                 ),

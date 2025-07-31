@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:temp_aar_ature/services/temperature_service.dart';
-import 'package:temp_aar_ature/services/service_locator.dart';
-import 'package:temp_aar_ature/repositories/temperature_repository.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_service.dart';
+import 'package:temp_aar_ature/core/services/service_locator.dart';
+import 'package:temp_aar_ature/features/temperature/services/temperature_repository.dart';
 import '../mocks/mock_temperature_repository.dart';
 
 void main() {
@@ -145,12 +145,12 @@ void main() {
       expect(temperatureService.lastMeasurementTime, isNull);
     });
 
-    test('should delegate updateTemperatureData to repository', () async {
+    test('should delegate update to repository', () async {
       // Arrange
       mockRepository.setUpdateResult(true);
 
       // Act
-      final result = await temperatureService.updateTemperatureData();
+      final result = await temperatureService.update();
 
       // Assert
       expect(result, isTrue);
@@ -162,7 +162,7 @@ void main() {
       mockRepository.setUpdateResult(false);
 
       // Act
-      await temperatureService.updateTemperatureData(maxRetries: 5);
+      await temperatureService.update(maxRetries: 5);
 
       // Assert
       expect(mockRepository.lastMaxRetries, equals(5));

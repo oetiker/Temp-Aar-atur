@@ -1,7 +1,7 @@
 # Flutter Style Guide for LLM Code Generation
 
 ## Core Philosophy
-Generate Flutter code following Google's internal patterns: **prioritize simplicity, clarity, and maintainability over architectural complexity**. Only introduce complexity when genuinely needed.
+Generate Flutter code following these patterns: **prioritize simplicity, clarity, and maintainability over architectural complexity**. Only introduce complexity when genuinely needed.
 
 ## 1. Widget Architecture
 
@@ -106,7 +106,9 @@ Only use Provider, Riverpod, Bloc, etc. when:
 - State needs to be shared across multiple unrelated widgets
 - State persists across navigation
 - Complex async operations with multiple states
-- Team explicitly requires it
+- Team explicitly requires it.
+
+Pick Riverpod if advanced state management is required.
 
 ## 3. Naming Conventions
 
